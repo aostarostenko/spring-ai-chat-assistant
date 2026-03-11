@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Profile - AI Chat Assistant</title>
+    <link rel="stylesheet" th:href="@{/css/chat-style.css}">
+</head>
+<body class="card-container">
+    <div class="card" style="width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0;">User Profile</h2>
+            <a th:href="@{/}" class="profile-link">Back to Chat</a>
+        </div>
+        
+        <div th:if="${param.emailUpdated}" style="color: #3fb950; margin-bottom: 20px;">Email updated successfully.</div>
+        <div th:if="${param.passwordUpdated}" style="color: #3fb950; margin-bottom: 20px;">Password changed successfully.</div>
+        <div th:if="${error}" class="error-msg" th:text="${error}"></div>
+
+        <section style="margin-bottom: 40px;">
+            <h3>Account Details</h3>
+            <p><strong>Username:</strong> <span th:text="${user.username}"></span></p>
+            <form th:action="@{/profile/update-email}" method="post">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" th:value="${user.email}" required>
+                </div>
+                <button type="submit" class="new-chat-btn" style="width: auto; padding: 10px 20px;">Update Email</button>
+            </form>
+        </section>
+
+        <section>
+            <h3>Security</h3>
+            <form th:action="@{/profile/change-password}" method="post">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" name="oldPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" name="newPassword" required>
+                </div>
+                <button type="submit" class="new-chat-btn" style="width: auto; padding: 10px 20px; background-color: var(--border-color);">Change Password</button>
+            </form>
+        </section>
+
+        <form th:action="@{/logout}" method="post" style="margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button type="submit" style="background: none; border: none; color: #f85149; cursor: pointer; font-size: 0.9em;">Logout</button>
+        </form>
+    </div>
+</body>
+</html>

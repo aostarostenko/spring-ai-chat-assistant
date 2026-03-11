@@ -1,0 +1,180 @@
+:root {
+    --bg-color: #0d1117;
+    --sidebar-bg: #161b22;
+    --chat-bg: #0d1117;
+    --text-color: #c9d1d9;
+    --accent-color: #58a6ff;
+    --user-msg-bg: #1f6feb;
+    --ai-msg-bg: #21262d;
+    --input-bg: #0d1117;
+    --border-color: #30363d;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    height: 100vh;
+}
+
+/* 3-column layout structure */
+.sidebar {
+    width: 260px;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.main-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.input-area {
+    padding: 20px;
+    background-color: var(--chat-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.new-chat-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--user-msg-bg);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.session-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-color);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9em;
+}
+
+.session-item:hover, .session-item.active {
+    background-color: var(--border-color);
+}
+
+.message {
+    margin-bottom: 20px;
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.message.user {
+    align-self: flex-end;
+    background-color: var(--user-msg-bg);
+    margin-left: auto;
+}
+
+.message.ai {
+    align-self: flex-start;
+    background-color: var(--ai-msg-bg);
+    border: 1px solid var(--border-color);
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="text"] {
+    flex: 1;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 12px;
+    border-radius: 6px;
+    outline: none;
+}
+
+button.send-btn {
+    padding: 0 20px;
+    background-color: var(--user-msg-bg);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Card layout for login/reg/profile */
+.card-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card {
+    background-color: var(--sidebar-bg);
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    width: 400px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.form-group input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.error-msg {
+    color: #f85149;
+    margin-bottom: 20px;
+}
+
+.sidebar-footer {
+    padding: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.profile-link {
+    text-decoration: none;
+    color: var(--accent-color);
+    font-size: 0.9em;
+}

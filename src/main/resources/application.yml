@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: spring-ai-chat-assistant
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/ai_assistant_db
+  ai:
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY}
+  thymeleaf:
+    cache: false
+
+logging:
+  level:
+    com.nexus.chatassistant: DEBUG
+    org.springframework.security: INFO
+    org.springframework.ai: INFO

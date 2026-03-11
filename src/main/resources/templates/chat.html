@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AI Chat Assistant</title>
+    <link rel="stylesheet" th:href="@{/css/chat-style.css}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a th:href="@{/chat/new}" class="new-chat-btn">+ New Chat</a>
+        </div>
+        <div class="session-list">
+            <a th:each="session : ${sessions}"
+               th:href="@{/chat/{id}(id=${session.id})}"
+               th:class="'session-item ' + (${session.id == activeSessionId} ? 'active' : '')"
+               th:text="${session.summary != null ? session.summary : 'New Chat'}">
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <a th:href="@{/profile}" class="profile-link">Settings: <span th:text="${user.username}"></span></a>
+        </div>
+    </aside>
+
+    <main class="main-chat">
+        <div class="chat-history" id="chat-history">
+            <div th:if="${messages != null}">
+                <div th:each="msg : ${messages}" 
+                     th:class="'message ' + ${msg.sender}"
+                     th:text="${msg.content}">
+                </div>
+            </div>
+            <div th:if="${activeSessionId == null}" style="text-align: center; margin-top: 100px; color: #8b949e;">
+                <h2>Welcome to AI Chat Assistant</h2>
+                <p>Select a chat or start a new one to begin.</p>
+            </div>
+        </div>
+
+        <div class="input-area" th:if="${activeSessionId != null}">
+            <div class="input-container">
+                <input type="text" id="message-input" placeholder="Type your message here..." autofocus>
+                <button class="send-btn" id="send-btn">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const sessionId = /*[[${activeSessionId}]]*/ null;
+        let stompClient = null;
+
+        function connect() {
+            if (!sessionId) return;
+            const socket = new SockJS('/chat-websocket');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                console.log('Connected: ' + frame);
+                stompClient.subscribe('/topic/messages/' + sessionId, function (messageOutput) {
+                    showMessage(JSON.parse(messageOutput.body));
+                });
+            });
+        }
+
+        function showMessage(message) {
+            const history = document.getElementById('chat-history');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ' + message.sender;
+            msgDiv.textContent = message.content;
+            history.appendChild(msgDiv);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            if (content && stompClient) {
+                stompClient.send("/app/chat", {}, JSON.stringify({'sessionId': sessionId, 'content': content}));
+                input.value = '';
+            }
+        }
+
+        document.getElementById('send-btn')?.addEventListener('click', sendMessage);
+        document.getElementById('message-input')?.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        connect();
+        // Scroll to bottom on load
+        const history = document.getElementById('chat-history');
+        history.scrollTop = history.scrollHeight;
+        /*]]>*/
+    </script>
+</body>
+</html>
