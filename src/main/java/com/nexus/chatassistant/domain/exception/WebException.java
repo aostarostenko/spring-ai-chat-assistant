@@ -15,4 +15,8 @@ public class WebException extends RuntimeException {
     public String getErrorCode() {
         return errorCode;
     }
+
+    public String getCode() {
+        return errorCode;
+    }
 }

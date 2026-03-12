@@ -15,4 +15,8 @@ public class SecurityException extends RuntimeException {
     public String getSecurityCode() {
         return securityCode;
     }
+
+    public String getCode() {
+        return securityCode;
+    }
 }

@@ -12,6 +12,8 @@ spring:
         api-key: ${GEMINI_API_KEY}
   thymeleaf:
     cache: false
+  messages:
+    encoding: UTF-8
 
 logging:
   level:

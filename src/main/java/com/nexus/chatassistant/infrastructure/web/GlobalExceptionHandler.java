@@ -26,19 +26,19 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(SecurityException.class)
     public String handleSecurityException(SecurityException ex, RedirectAttributes redirectAttributes) {
-        String msg = messageSource.getMessage(ex.getSecurityCode(), null, LocaleContextHolder.getLocale());
-        log.error("SECURITY ALERT [{}]: {}", ex.getSecurityCode(), ex.getMessage());
+        String msg = messageSource.getMessage(ex.getCode(), null, LocaleContextHolder.getLocale());
+        log.error("SECURITY ALERT [{}]: {}", ex.getCode(), ex.getMessage());
         redirectAttributes.addFlashAttribute("securityError", msg);
-        return "redirect:/login?error=" + ex.getSecurityCode();
+        return "redirect:/login?error=" + ex.getCode();
     }
 
     @ExceptionHandler(DaoException.class)
     public String handleDao(DaoException ex, RedirectAttributes ra) {
         // Log the full technical error for debugging
-        log.error("Database Error [Code: {}]: {}", ex.getErrorCode(), ex.getMessage(), ex.getCause());
+        log.error("Database Error [Code: {}]: {}", ex.getCode(), ex.getMessage(), ex.getCause());
 
         // Resolve the user-friendly message from properties
-        String msg = messageSource.getMessage(ex.getErrorCode(), null, "A data error occurred.", LocaleContextHolder.getLocale());
+        String msg = messageSource.getMessage(ex.getCode(), null, "A data error occurred.", LocaleContextHolder.getLocale());
 
         ra.addFlashAttribute("error", msg);
         return "redirect:/"; // Usually redirect to home if the DB fails
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(WebException.class)
     public String handleWebException(WebException ex, RedirectAttributes redirectAttributes) {
-        String msg = messageSource.getMessage(ex.getErrorCode(), null, LocaleContextHolder.getLocale());
+        String msg = messageSource.getMessage(ex.getCode(), null, LocaleContextHolder.getLocale());
         log.warn("Business Logic Error: {}", msg);
         redirectAttributes.addFlashAttribute("error", msg);
         return "redirect:/profile";
