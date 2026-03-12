@@ -1,9 +1,8 @@
 package com.nexus.chatassistant.application.service;
 
 import com.nexus.chatassistant.domain.model.ChatMessage;
-import com.nexus.chatassistant.domain.model.ChatSession;
-import com.nexus.chatassistant.infrastructure.persistence.ChatMessageRepository;
-import com.nexus.chatassistant.infrastructure.persistence.ChatSessionRepository;
+import com.nexus.chatassistant.domain.repository.ChatMessageRepository;
+import com.nexus.chatassistant.domain.repository.ChatSessionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,6 +12,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Background service for conversation summarization.
+ * Updates chat session titles to help users navigate history.
+ */
 @Service
 public class SummarizationService {
     private static final Logger log = LoggerFactory.getLogger(SummarizationService.class);
@@ -28,32 +31,27 @@ public class SummarizationService {
         this.chatClient = chatClientBuilder.build();
     }
 
+    /**
+     * Asynchronously generates a 6-word summary of the conversation.
+     */
     @Async
     public void summarizeAsync(String sessionId) {
         log.info("Starting background summarization for session: {}", sessionId);
-        
+
         List<ChatMessage> messages = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId);
-        String conversation = messages.stream()
+        String history = messages.stream()
                 .map(m -> m.sender() + ": " + m.content())
                 .collect(Collectors.joining("\n"));
 
-        String prompt = """
-                You are a helpful assistant. Summarize this conversation in 6 words for a sidebar title.
-                Conversation:
-                %s
-                """.formatted(conversation);
+        String prompt = "Summarize the following conversation in exactly 6 words for a sidebar title: \n" + history;
 
         try {
-            String summary = chatClient.prompt()
-                    .user(prompt)
-                    .call()
-                    .content();
-            
-            log.info("Generated summary for session {}: {}", sessionId, summary);
-            
+            String summary = chatClient.prompt().user(prompt).call().content();
+            log.info("New summary for {}: {}", sessionId, summary);
+
             sessionRepository.findById(sessionId).ifPresent(session -> {
-                ChatSession updated = session.withSummary(summary);
-                sessionRepository.save(updated);
+                sessionRepository.save(session.withSummary(summary));
+                log.debug("Session {} metadata updated in MongoDB.", sessionId);
             });
         } catch (Exception e) {
             log.error("Failed to summarize session {}: {}", sessionId, e.getMessage());

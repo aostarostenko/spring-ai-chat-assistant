@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Controller handling user profile views and settings modifications.
+ */
 @Controller
 public class ProfileController {
     private static final Logger log = LoggerFactory.getLogger(ProfileController.class);
@@ -21,6 +24,9 @@ public class ProfileController {
         this.userService = userService;
     }
 
+    /**
+     * Displays the user profile page.
+     */
     @GetMapping("/profile")
     public String profile(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         User user = userService.findByUsername(userDetails.getUsername())
@@ -29,30 +35,38 @@ public class ProfileController {
         return "profile";
     }
 
-    @PostMapping("/profile/update-email")
-    public String updateEmail(@AuthenticationPrincipal UserDetails userDetails,
-                              @RequestParam String email,
-                              Model model) {
-        try {
-            userService.updateEmail(userDetails.getUsername(), email);
-            return "redirect:/profile?emailUpdated";
-        } catch (Exception e) {
-            log.error("Email update error: {}", e.getMessage());
-            model.addAttribute("error", e.getMessage());
-            return profile(userDetails, model);
-        }
-    }
-
+    /**
+     * Handles the request to change a user's password.
+     */
     @PostMapping("/profile/change-password")
     public String changePassword(@AuthenticationPrincipal UserDetails userDetails,
                                  @RequestParam String oldPassword,
                                  @RequestParam String newPassword,
                                  Model model) {
         try {
+            log.info("User '{}' requested a password change.", userDetails.getUsername());
             userService.updatePassword(userDetails.getUsername(), oldPassword, newPassword);
             return "redirect:/profile?passwordUpdated";
         } catch (Exception e) {
-            log.error("Password update error: {}", e.getMessage());
+            log.error("Password update error for user '{}': {}", userDetails.getUsername(), e.getMessage());
+            model.addAttribute("error", e.getMessage());
+            return profile(userDetails, model);
+        }
+    }
+
+    /**
+     * Handles the request to update a user's email.
+     */
+    @PostMapping("/profile/update-email")
+    public String updateEmail(@AuthenticationPrincipal UserDetails userDetails,
+                              @RequestParam String email,
+                              Model model) {
+        try {
+            log.info("User '{}' updating email to: {}", userDetails.getUsername(), email);
+            userService.updateEmail(userDetails.getUsername(), email);
+            return "redirect:/profile?emailUpdated";
+        } catch (Exception e) {
+            log.error("Email update error for user '{}': {}", userDetails.getUsername(), e.getMessage());
             model.addAttribute("error", e.getMessage());
             return profile(userDetails, model);
         }

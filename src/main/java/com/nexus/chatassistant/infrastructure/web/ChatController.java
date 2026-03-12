@@ -4,7 +4,6 @@ import com.nexus.chatassistant.application.service.ChatService;
 import com.nexus.chatassistant.domain.model.ChatMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -12,6 +11,10 @@ import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
 
+/**
+ * WebSocket Adapter responsible for receiving chat intents and broadcasting
+ * AI-generated responses back to the client.
+ */
 @Controller
 public class ChatController {
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
@@ -23,45 +26,27 @@ public class ChatController {
         this.messagingTemplate = messagingTemplate;
     }
 
+    /**
+     * Receives messages from the client, saves them, fetches an AI response,
+     * and broadcasts both updates back to the subscriber.
+     */
     @MessageMapping("/chat")
-    public void handleMessage(@Payload ChatMessageRequest request,
-                              Principal principal) {
-        String sessionId = request.sessionId();
-        log.info("Received WebSocket message for session {}: {}", sessionId, request.content());
-        
-        // 1. Save and broadcast user message
-        // ChatService.chat handles saving both, but we need to broadcast user message first for UI.
-        ChatMessage userMsg = new ChatMessage(sessionId, "user", request.content());
-        // Note: ChatService.chat will save it again if we are not careful.
-        // Actually the requirement for ChatService.chat says "1. Save User message to DB."
-        // So I should let ChatService do it.
-        
-        // Wait, if I want real-time, I should broadcast user message immediately.
-        // But if I call chatService.chat(), it will save it first.
-        
-        // Let's call chatService.chat() and broadcast its results.
-        // Actually, to be reactive:
-        // - Broadcast user message (it's not saved yet, or we save it then broadcast)
-        // - Call Gemini
-        // - Save AI response
-        // - Broadcast AI response
-        
-        // The description for chatService.chat is very specific. 
-        // I'll call it, but I'll manually broadcast the user message BEFORE calling it 
-        // OR I will refactor chatService.chat slightly if possible, but the requirement is strict.
-        
-        // Let's follow the requirement:
-        // 1. Broadcast user message (immediately for UI responsiveness)
-        ChatMessage tempUserMsg = new ChatMessage(sessionId, "user", request.content());
-        messagingTemplate.convertAndSend("/topic/messages/" + sessionId, tempUserMsg);
+    public void handleMessage(@Payload ChatMessageRequest request, Principal principal) {
+        String username = (principal != null) ? principal.getName() : "anonymous";
+        log.info("WebSocket: User '{}' sending content to session {}", username, request.sessionId());
 
-        // 2. Call ChatService.chat which saves both messages and returns AI response
-        String aiResponse = chatService.chat(sessionId, request.content());
-        
-        // 3. Broadcast AI response
-        ChatMessage aiMsg = new ChatMessage(sessionId, "ai", aiResponse);
-        messagingTemplate.convertAndSend("/topic/messages/" + sessionId, aiMsg);
+        // 1. Process User Message: Persist and notify UI immediately
+        ChatMessage userMsg = chatService.addMessage(request.sessionId(), "user", request.content());
+        messagingTemplate.convertAndSend("/topic/messages/" + request.sessionId(), userMsg);
+        log.debug("Broadcasted user message for session: {}", request.sessionId());
+
+        // 2. Fetch AI response and notify UI
+        String responseText = chatService.chat(request.sessionId(), request.content());
+        ChatMessage aiMsg = new ChatMessage(request.sessionId(), "ai", responseText);
+        messagingTemplate.convertAndSend("/topic/messages/" + request.sessionId(), aiMsg);
+        log.info("Broadcasted AI response for session: {}", request.sessionId());
     }
 
-    public record ChatMessageRequest(String sessionId, String content) {}
+    public record ChatMessageRequest(String sessionId, String content) {
+    }
 }

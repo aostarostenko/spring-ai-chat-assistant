@@ -1,26 +1,31 @@
 package com.nexus.chatassistant.infrastructure.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+/**
+ * Adapter configuring STOMP endpoints for real-time AI communication.
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+    private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Outbound: Messages from Server to Client (e.g., /topic/messages/123)
+        log.info("Initializing STOMP broker for real-time messaging.");
         config.enableSimpleBroker("/topic");
-        // Inbound: Messages from Client to Server (e.g., /app/chat/123)
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/chat-websocket")
-                .withSockJS();
+        log.info("Registering WebSocket endpoint: /chat-websocket");
+        registry.addEndpoint("/chat-websocket").withSockJS();
     }
 }

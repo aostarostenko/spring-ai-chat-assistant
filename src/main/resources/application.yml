@@ -4,9 +4,8 @@ spring:
   threads:
     virtual:
       enabled: true
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/ai_assistant_db
+  mongodb:
+      uri: mongodb://mongodb:27017/ai_assistant_db
   ai:
     google:
       genai:

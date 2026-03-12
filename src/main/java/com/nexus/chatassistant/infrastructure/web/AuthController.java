@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+/**
+ * Controller responsible for handling user authentication and registration requests.
+ * It serves the login and registration views and processes account creation.
+ */
 @Controller
 public class AuthController {
     private static final Logger log = LoggerFactory.getLogger(AuthController.class);
@@ -18,26 +22,38 @@ public class AuthController {
         this.userService = userService;
     }
 
+    /**
+     * Renders the login page.
+     */
     @GetMapping("/login")
     public String login() {
         return "login";
     }
 
+    /**
+     * Renders the user registration form.
+     */
     @GetMapping("/register")
     public String registerForm() {
         return "registration";
     }
 
+    /**
+     * Processes a new user registration request.
+     * On success, redirects to the login page with a success flag.
+     */
     @PostMapping("/register")
     public String registerUser(@RequestParam String username,
                                @RequestParam String email,
                                @RequestParam String password,
                                Model model) {
+        log.info("Received registration request for username: {}", username);
         try {
             userService.registerUser(username, email, password);
+            log.info("User {} successfully registered.", username);
             return "redirect:/login?registered";
         } catch (Exception e) {
-            log.error("Registration error: {}", e.getMessage());
+            log.error("Registration failed for user {}: {}", username, e.getMessage());
             model.addAttribute("error", e.getMessage());
             return "registration";
         }

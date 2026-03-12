@@ -4,6 +4,8 @@ import com.nexus.chatassistant.application.service.ChatService;
 import com.nexus.chatassistant.application.service.UserService;
 import com.nexus.chatassistant.domain.model.ChatSession;
 import com.nexus.chatassistant.domain.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -13,8 +15,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
+/**
+ * Adapter for managing server-side rendered chat views.
+ */
 @Controller
 public class ChatWebController {
+    private static final Logger log = LoggerFactory.getLogger(ChatWebController.class);
     private final ChatService chatService;
     private final UserService userService;
 
@@ -23,26 +29,18 @@ public class ChatWebController {
         this.userService = userService;
     }
 
-    @GetMapping("/")
-    public String index(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        return chatPage(null, userDetails, model);
-    }
-
-    @GetMapping("/chat/new")
-    public String newChat(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = userService.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        ChatSession session = chatService.startNewSession(user.id());
-        return "redirect:/chat/" + session.id();
-    }
-
-    @GetMapping("/chat/{sessionId}")
+    /**
+     * Loads the chat page. If a sessionId is provided, it loads that session's history.
+     */
+    @GetMapping({"/", "/chat/{sessionId}"})
     public String chatPage(@PathVariable(required = false) String sessionId,
                            @AuthenticationPrincipal UserDetails userDetails,
                            Model model) {
+        log.info("User {} is accessing chat interface. Active session: {}", userDetails.getUsername(), sessionId);
+
         User user = userService.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         List<ChatSession> sessions = chatService.getUserSessions(user.id());
         model.addAttribute("sessions", sessions);
         model.addAttribute("user", user);
@@ -50,10 +48,8 @@ public class ChatWebController {
         if (sessionId != null) {
             model.addAttribute("activeSessionId", sessionId);
             model.addAttribute("messages", chatService.getSessionMessages(sessionId));
-        } else if (!sessions.isEmpty()) {
-            // Automatically redirect to latest session?
-            // return "redirect:/chat/" + sessions.get(0).id();
-            // Let's stay on blank page or load latest
+            log.debug("Loaded {} messages for session {}",
+                    chatService.getSessionMessages(sessionId).size(), sessionId);
         }
 
         return "chat";
