@@ -1,19 +1,23 @@
-# Stage 1: Build the application
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+# Stage 1: Build the application using JDK 25
+# We use the Eclipse Temurin image for JDK 25 and manually set up Maven
+FROM eclipse-temurin:25-jdk-alpine AS build
 WORKDIR /app
-# Copy pom.xml and download dependencies (cached layer)
+
+# Install Maven in the alpine build environment
+RUN apk add --no-cache maven
+
+# Copy pom.xml and download dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
-# Copy source code and build the jar
+
+# Copy source code and build
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Stage 2: Runtime environment
-# Using the 2026-standard OpenJDK 25 image
+# Stage 2: Runtime environment (stays the same)
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
-# Copy the built jar from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Run with Virtual Threads optimization and production profile
+# Optimization for Virtual Threads (Java 25)
 ENTRYPOINT ["java", "-Dspring.threads.virtual.enabled=true", "-jar", "app.jar"]

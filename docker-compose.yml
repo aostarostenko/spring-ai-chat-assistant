@@ -1,8 +1,8 @@
 services:
-  # 1. MongoDB Database
+  # 1. MongoDB Database Service
   mongodb:
     image: mongo:latest
-    container_name: nexus-chat-db
+    container_name: spring-ai-chat-db
     ports:
       - "27017:27017"
     environment:
@@ -10,18 +10,20 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  # 2. Nexus Chat Assistant Application
-  app:
+  # 2. Spring AI Chat Assistant Service
+  spring-ai-chat-assistant:
     build: .
-    container_name: nexus-chat-app
+    container_name: spring-ai-chat-assistant
     ports:
       - "8080:8080"
     depends_on:
       - mongodb
     environment:
-      # Use the internal Docker network name for the DB connection
-      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/ai_assistant_db
-      # You must pass your Gemini Key here
+      # Use the internal service name 'mongodb' for the connection URI [cite: 181]
+      - SPRING_MONGODB_URI=mongodb://mongodb:27017/ai_assistant_db
+      # Enables Java 25 Virtual Threads for high-performance AI processing [cite: 181, 201]
+      - SPRING_THREADS_VIRTUAL_ENABLED=true
+      # Securely injected from your local environment variables [cite: 181, 206]
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     restart: always
 
