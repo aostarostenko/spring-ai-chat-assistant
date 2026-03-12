@@ -1,11 +1,14 @@
 package com.nexus.chatassistant.application.service;
 
+import com.nexus.chatassistant.domain.exception.DaoException;
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
 import com.nexus.chatassistant.domain.model.ChatMessage;
 import com.nexus.chatassistant.domain.repository.ChatMessageRepository;
 import com.nexus.chatassistant.domain.repository.ChatSessionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.dao.DataAccessException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -38,7 +41,13 @@ public class SummarizationService {
     public void summarizeAsync(String sessionId) {
         log.info("Starting background summarization for session: {}", sessionId);
 
-        List<ChatMessage> messages = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId);
+        List<ChatMessage> messages;
+        try {
+            messages = messageRepository.findBySessionIdOrderByTimestampAsc(sessionId);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+        }
+
         String history = messages.stream()
                 .map(m -> m.sender() + ": " + m.content())
                 .collect(Collectors.joining("\n"));
@@ -49,10 +58,18 @@ public class SummarizationService {
             String summary = chatClient.prompt().user(prompt).call().content();
             log.info("New summary for {}: {}", sessionId, summary);
 
-            sessionRepository.findById(sessionId).ifPresent(session -> {
-                sessionRepository.save(session.withSummary(summary));
-                log.debug("Session {} metadata updated in MongoDB.", sessionId);
-            });
+            try {
+                sessionRepository.findById(sessionId).ifPresent(session -> {
+                    try {
+                        sessionRepository.save(session.withSummary(summary));
+                        log.debug("Session {} metadata updated in MongoDB.", sessionId);
+                    } catch (DataAccessException e) {
+                        throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
+                    }
+                });
+            } catch (DataAccessException e) {
+                throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+            }
         } catch (Exception e) {
             log.error("Failed to summarize session {}: {}", sessionId, e.getMessage());
         }

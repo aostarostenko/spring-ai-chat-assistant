@@ -1,5 +1,8 @@
 package com.nexus.chatassistant.application.service;
 
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
+import com.nexus.chatassistant.domain.exception.SecurityException;
+import com.nexus.chatassistant.domain.exception.WebException;
 import com.nexus.chatassistant.domain.model.User;
 import com.nexus.chatassistant.domain.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +58,19 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw DaoException during registration if database fails")
+    void shouldThrowDaoExceptionDuringRegistrationIfDbFails() {
+        // Given
+        String username = "testuser";
+        when(userRepository.findByUsername(username)).thenThrow(new org.springframework.dao.RecoverableDataAccessException("DB down"));
+
+        // When / Then
+        assertThatThrownBy(() -> userService.registerUser(username, "email@test.com", "pass"))
+                .isInstanceOf(com.nexus.chatassistant.domain.exception.DaoException.class)
+                .hasMessageContaining("DB Error");
+    }
+
+    @Test
     @DisplayName("Should throw exception if username already exists during registration")
     void shouldThrowExceptionIfUsernameExists() {
         // Given
@@ -63,8 +79,21 @@ class UserServiceTest {
 
         // When / Then
         assertThatThrownBy(() -> userService.registerUser(username, "email@test.com", "pass"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Username already exists");
+                .isInstanceOf(WebException.class)
+                .hasMessage("Duplicate check");
+    }
+
+    @Test
+    @DisplayName("Should throw SecurityException if user not found during password update")
+    void shouldThrowSecurityExceptionWhenUserNotFoundDuringPasswordUpdate() {
+        // Given
+        String username = "nonexistent";
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> userService.updatePassword(username, "old", "new"))
+                .isInstanceOf(SecurityException.class)
+                .hasMessage("User check failed");
     }
 
     @Test
@@ -99,8 +128,21 @@ class UserServiceTest {
 
         // When / Then
         assertThatThrownBy(() -> userService.updatePassword(username, "wrongPass", "newPass"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(SecurityException.class)
                 .hasMessage("Incorrect current password");
+    }
+
+    @Test
+    @DisplayName("Should throw SecurityException if user not found during email update")
+    void shouldThrowSecurityExceptionWhenUserNotFoundDuringEmailUpdate() {
+        // Given
+        String username = "nonexistent";
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> userService.updateEmail(username, "new@email.com"))
+                .isInstanceOf(SecurityException.class)
+                .hasMessage("User check failed");
     }
 
     @Test
@@ -136,7 +178,7 @@ class UserServiceTest {
 
         // When / Then
         assertThatThrownBy(() -> userService.updateEmail(username, newEmail))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Email already taken");
+                .isInstanceOf(WebException.class)
+                .hasMessage("Duplicate check");
     }
 }

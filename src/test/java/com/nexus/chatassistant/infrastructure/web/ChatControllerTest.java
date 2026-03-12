@@ -2,6 +2,7 @@ package com.nexus.chatassistant.infrastructure.web;
 
 import com.nexus.chatassistant.application.service.ChatService;
 import com.nexus.chatassistant.application.service.UserService;
+import com.nexus.chatassistant.domain.exception.SecurityException;
 import com.nexus.chatassistant.domain.model.ChatMessage;
 import com.nexus.chatassistant.domain.model.ChatSession;
 import com.nexus.chatassistant.domain.model.User;
@@ -17,6 +18,7 @@ import java.security.Principal;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -80,10 +82,11 @@ class ChatControllerTest {
         // Given
         ChatController.ChatMessageRequest request = new ChatController.ChatMessageRequest("sess", "hi");
 
-        // When
-        chatController.handleMessage(request, null);
+        // When / Then
+        assertThatThrownBy(() -> chatController.handleMessage(request, null))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("Anonymous user attempted to post");
 
-        // Then
         verify(chatService, never()).addMessage(any(), any(), any());
     }
 
@@ -104,10 +107,11 @@ class ChatControllerTest {
         when(userService.findByUsername(username)).thenReturn(Optional.of(userA));
         when(chatService.getSession(sessionId)).thenReturn(sessionB);
 
-        // When
-        chatController.handleMessage(request, principal);
+        // When / Then
+        assertThatThrownBy(() -> chatController.handleMessage(request, principal))
+                .isInstanceOf(SecurityException.class)
+                .hasMessageContaining("Unauthorized session access");
 
-        // Then
         verify(chatService, never()).addMessage(any(), any(), any());
     }
 }

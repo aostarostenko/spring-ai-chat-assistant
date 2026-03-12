@@ -1,6 +1,8 @@
 package com.nexus.chatassistant.infrastructure.web;
 
 import com.nexus.chatassistant.application.service.UserService;
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
+import com.nexus.chatassistant.domain.exception.SecurityException;
 import com.nexus.chatassistant.domain.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,7 @@ public class ProfileController {
     @GetMapping("/profile")
     public String profile(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         User user = userService.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
         model.addAttribute("user", user);
         return "profile";
     }

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error - Nexus AI</title>
+    <link rel="stylesheet" th:href="@{/css/chat-style.css}">
+</head>
+<body class="card-container">
+<div class="card" style="text-align: center;">
+    <h1 style="color: #f85149;">Oops!</h1>
+    <p th:text="${error}"></p>
+    <a th:href="@{/}" class="new-chat-btn">Return to Safety</a>
+</div>
+</body>
+</html>

@@ -1,9 +1,14 @@
 package com.nexus.chatassistant.application.service;
 
+import com.nexus.chatassistant.domain.exception.DaoException;
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
+import com.nexus.chatassistant.domain.exception.SecurityException;
+import com.nexus.chatassistant.domain.exception.WebException;
 import com.nexus.chatassistant.domain.model.User;
 import com.nexus.chatassistant.domain.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,16 +39,25 @@ public class UserService {
      */
     public void updatePassword(String username, String oldPassword, String newPassword) {
         log.info("Processing password update request for user: {}", username);
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user;
+        try {
+            user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+        }
 
         if (!passwordEncoder.matches(oldPassword, user.password())) {
             log.warn("Password update failed for user {}: Current password mismatch.", username);
-            throw new RuntimeException("Incorrect current password");
+            throw new SecurityException("Incorrect current password", ErrorCodes.CREDENTIAL_MISMATCH);
         }
 
         User updatedUser = user.withPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(updatedUser);
+        try {
+            userRepository.save(updatedUser);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
+        }
         log.info("Password successfully updated for user: {}", username);
     }
 
@@ -52,16 +66,25 @@ public class UserService {
      */
     public User updateEmail(String username, String newEmail) {
         log.info("Updating email for user: {}", username);
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user;
+        try {
+            user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
 
-        if (userRepository.findByEmail(newEmail).isPresent() && !user.email().equals(newEmail)) {
-            log.warn("Email update failed for {}: '{}' is already in use.", username, newEmail);
-            throw new RuntimeException("Email already taken");
+            if (userRepository.findByEmail(newEmail).isPresent() && !user.email().equals(newEmail)) {
+                log.warn("Email update failed for {}: '{}' is already in use.", username, newEmail);
+                throw new WebException("Duplicate check", ErrorCodes.DUPLICATE_USER);
+            }
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
         }
 
         User updatedUser = user.withEmail(newEmail);
-        return userRepository.save(updatedUser);
+        try {
+            return userRepository.save(updatedUser);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
+        }
     }
 
     /**
@@ -69,14 +92,31 @@ public class UserService {
      */
     public User registerUser(String username, String email, String password) {
         log.info("Registering new user: {}", username);
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Username already exists");
+        
+        boolean exists;
+        try {
+            exists = userRepository.findByUsername(username).isPresent();
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
         }
+
+        if (exists) {
+            throw new WebException("Duplicate check", ErrorCodes.DUPLICATE_USER);
+        }
+
         User user = new User(username, email, passwordEncoder.encode(password), Set.of("ROLE_USER"));
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
+        }
     }
 
     public Optional<User> findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        try {
+            return userRepository.findByUsername(username);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+        }
     }
 }

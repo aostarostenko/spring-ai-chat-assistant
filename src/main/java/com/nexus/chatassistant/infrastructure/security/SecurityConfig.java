@@ -22,7 +22,7 @@ public class SecurityConfig {
 
         http
                 // Ignore CSRF for WebSocket endpoint to allow STOMP handshakes
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/chat-websocket/**"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/chat-websocket/**", "/login", "/register"))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/register", "/login", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/chat-websocket/**").permitAll()
@@ -33,7 +33,14 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
-                .logout(logout -> logout.logoutSuccessUrl("/login?logout").permitAll());
+                .logout(logout -> logout.logoutSuccessUrl("/login?logout").permitAll())
+                .exceptionHandling(exceptions -> exceptions
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            throw new com.nexus.chatassistant.domain.exception.SecurityException(
+                                    "You do not have permission to access this resource.", "ACCESS_DENIED"
+                            );
+                        })
+                );
 
         return http.build();
     }

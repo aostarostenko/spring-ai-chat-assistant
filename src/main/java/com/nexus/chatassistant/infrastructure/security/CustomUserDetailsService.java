@@ -1,5 +1,7 @@
 package com.nexus.chatassistant.infrastructure.security;
 
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
+import com.nexus.chatassistant.domain.exception.SecurityException;
 import com.nexus.chatassistant.domain.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +32,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         com.nexus.chatassistant.domain.model.User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     log.warn("Authentication failed: User '{}' not found in database.", username);
-                    return new UsernameNotFoundException("User not found: " + username);
+                    return new SecurityException("Invalid credentials", ErrorCodes.AUTH_FAILED);
                 });
 
         log.info("User '{}' successfully loaded with roles: {}", username, user.roles());

@@ -2,6 +2,8 @@ package com.nexus.chatassistant.infrastructure.web;
 
 import com.nexus.chatassistant.application.service.ChatService;
 import com.nexus.chatassistant.application.service.UserService;
+import com.nexus.chatassistant.domain.exception.ErrorCodes;
+import com.nexus.chatassistant.domain.exception.SecurityException;
 import com.nexus.chatassistant.domain.model.ChatSession;
 import com.nexus.chatassistant.domain.model.User;
 import org.slf4j.Logger;
@@ -39,17 +41,23 @@ public class ChatWebController {
         log.info("User {} is accessing chat interface. Active session: {}", userDetails.getUsername(), sessionId);
 
         User user = userService.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
 
         List<ChatSession> sessions = chatService.getUserSessions(user.id());
         model.addAttribute("sessions", sessions);
         model.addAttribute("user", user);
 
         if (sessionId != null) {
-            model.addAttribute("activeSessionId", sessionId);
-            model.addAttribute("messages", chatService.getSessionMessages(sessionId));
-            log.debug("Loaded {} messages for session {}",
-                    chatService.getSessionMessages(sessionId).size(), sessionId);
+            ChatSession session = chatService.getSession(sessionId);
+            if (session != null && session.userId().equals(user.id())) {
+                model.addAttribute("activeSessionId", sessionId);
+                model.addAttribute("messages", chatService.getSessionMessages(sessionId));
+                log.debug("Loaded {} messages for session {}",
+                        chatService.getSessionMessages(sessionId).size(), sessionId);
+            } else {
+                log.warn("Access denied for user {} to session {}", user.id(), sessionId);
+                throw new SecurityException("Unauthorized session access", ErrorCodes.SESSION_ACCESS_DENIED);
+            }
         }
 
         return "chat";
