@@ -1,96 +1,94 @@
-This is the **final, comprehensive README** for your project. It’s designed to be the "source of truth" for anyone (including your future self) who needs to run, maintain, or explain this architecture.
+# 🤖 AI Chat Assistant
+
+### *Enterprise AI Chat with Spring Boot 4.0.3 & Java 25*
+
+**AI Chat Assistant** is a high-performance, real-time AI conversation platform. Built with **Hexagonal (Ports & Adapters) Architecture**, it ensures business logic remains decoupled from infrastructure like MongoDB and Google Gemini 3 Flash.
 
 ---
 
-# 🤖 Nexus Chat Assistant
+## 🛠 Technology Stack
 
-### *Spring AI + MongoDB + Hexagonal Architecture*
-
-A production-ready AI Chat application built with **Spring Boot 4.0.3** and **Spring AI 1.1.2**. This project leverages **Google Gemini 3** to provide real-time conversational intelligence while maintaining a clean, decoupled **Hexagonal Architecture**.
-
----
-
-## 🏗️ Architecture: The "Hexagon"
-
-This project follows the **Ports and Adapters** pattern to ensure that the business logic (the chat flow) is independent of external technologies (the AI provider, the DB, or the UI).
-
-### **Folder Structure Breakdown**
-
-* **`domain`**: The core. Contains pure Java records (`ChatMessage`, `ChatSession`) and repository interfaces (Ports). No framework dependencies.
-* **`application`**: The "Brain." Orchestrates use cases like starting a chat, generating AI responses, and auto-summarizing sessions.
-* **`infrastructure`**: The "Adapters."
-* **`persistence`**: MongoDB implementation of our repositories.
-* **`web`**: WebSocket (STOMP) and REST controllers for the frontend.
-* **`security`**: Spring Security 6 configurations and BCrypt password handling.
-* **`ai`**: Integration with Google Gemini 3 via Spring AI.
-
-
+* **Java 25 (LTS)**: High-throughput concurrency via **Virtual Threads**.
+* **Spring Boot 4.0.3 & Spring AI 1.1.2**: Modern AI integration.
+* **Google Gemini 3 Flash**: Ultra-low latency reasoning.
+* **MongoDB 8.0+**: Flexible document persistence.
+* **WebSockets (STOMP)**: Full-duplex real-time streaming.
 
 ---
 
-## 🚀 Tech Stack
+## 📖 How to Use the App
 
-* **Java 25**: Leveraging the latest LTS features and Virtual Threads.
-* **Spring Boot 3.4.3**: The backbone of the application.
-* **Spring AI 1.1.2 (GA)**: Using the latest stable General Availability release.
-* **Google Gemini 3 Flash**: High-speed, high-reasoning flagship model.
-* **MongoDB**: Flexible document storage for chat history.
-* **WebSockets (STOMP)**: For low-latency, real-time message streaming.
-* **Thymeleaf**: Server-side rendering for a snappy, secure UI.
+### **1. Getting Started**
+
+1. **Access the App**: Navigate to `http://localhost:8080` in your browser.
+2. **Language Selection**: By default, the app loads in **Ukrainian**. To switch to **English**, click the "English" link in the footer or append `?lang=en` to the URL.
+3. **Registration**: Click "Sign Up" and provide a username, email, and password. If the email is already taken, a localized `WebException` message will guide you.
+
+### **2. Starting a Chat**
+
+1. **New Session**: Click the **"+ New Chat"** button in the sidebar.
+2. **Sending Messages**: Type your prompt into the message box at the bottom.
+3. **Real-Time Response**: Watch as Gemini 3 Flash streams the response back to you. You don't need to refresh the page; the WebSocket connection handles the updates.
+4. **Auto-Summarization**: After 5 messages, the system uses a **Virtual Thread** to generate a 6-word title for your session, which will automatically update in your sidebar history.
+
+### **3. Managing Your Profile**
+
+1. **Account Settings**: Click on your profile icon to change your email or update your password.
+2. **Security Errors**: If you enter an incorrect old password, a `SecurityException` will trigger a secure redirect to the login page with a specialized warning.
+
+### **4. Error Feedback**
+
+* If the AI service is busy, a toast notification or error banner will appear with the message mapped from `WEB_103`.
+* If the database is down, you will be redirected to the home screen with a `DAO_001` error message.
 
 ---
 
-## 🛠️ Installation & Setup
+## 🏗️ System Structure (Hexagonal)
 
-### 1. Prerequisites
+1. **Domain**: Core business logic (Records & Interfaces).
+2. **Application**: Service orchestration using Virtual Threads.
+3. **Infrastructure**: Technical implementations (DB, Web, Security, AI).
 
-* **JDK 25** installed.
-* **MongoDB** running (Local or Atlas).
-* **Google AI API Key** (Get it from [Google AI Studio](https://aistudio.google.com/)).
+---
 
-### 2. Environment Variables
+## 🏗️ Folder Structure
 
-Create a `.env` file or set these in your system:
+```text
+src/main/java/com/nexus/chatassistant/
+├── application/         # Use Case Orchestration (The "Brain")
+│   └── service/         # ChatService, UserService, SummarizationService
+├── domain/              # Business Logic & Models (The "Core")
+│   ├── model/           # Records: User, ChatMessage, ChatSession
+│   ├── repository/      # Ports: Repository Interfaces
+│   └── exception/       # Custom Exception Hierarchy & ErrorCodes constants
+└── infrastructure/      # Adapters (The "Tools")
+    ├── persistence/     # MongoDB Implementations
+    ├── web/             # Controllers, GlobalExceptionHandler
+    ├── security/        # Spring Security 6 & BCrypt
+    └── config/          # Locale, WebSocket, and App Configurations
+
+```
+---
+
+## 🛡️ Error Handling Architecture
+
+The application implements a centralized, multi-tier error strategy using **Domain Exceptions** and **Localized Error Codes**.
+
+### **The Three-Tier Exception Model**
+
+1. **`WebException`**: Business validation (e.g., `WEB_101`: Duplicate User).
+2. **`SecurityException`**: Auth & Authorization (e.g., `SEC_003`: User Not Found).
+3. **`DaoException`**: Persistence failures (e.g., `DAO_001`: DB Connection Lost).
+
+---
+
+## 🛠️ Quick Start
 
 ```bash
-GEMINI_API_KEY=your_api_key_here
-MONGODB_URI=mongodb://localhost:27017/chat_assistant
+# 1. Set your Gemini API Key
+export GEMINI_API_KEY="your_key"
+
+# 2. Spin up the environment
+docker-compose up --build
 
 ```
-
-### 3. Build the Project
-
-Use the provided Maven Wrapper to force-refresh dependencies:
-
-```powershell
-./mvnw clean install -U -DskipTests
-
-```
-
-### 4. Run the App
-
-```powershell
-./mvnw spring-boot:run
-
-```
-
-Access the app at: `http://localhost:8080`
-
----
-
-## 📡 API & WebSocket Routes
-
-| Type | Route | Description |
-| --- | --- | --- |
-| **GET** | `/` | Main Chat Interface (Login required) |
-| **POST** | `/register` | User Registration |
-| **WS** | `/app/chat/{id}` | Inbound: Send message to session |
-| **WS** | `/topic/messages/{id}` | Outbound: Receive real-time AI response |
-
----
-
-## 🛡️ Security Features
-
-* **Session Isolation**: Users can only see and interact with their own chat sessions.
-* **CSRF Protection**: Configured specifically to allow WebSocket handshakes while keeping REST routes safe.
-* **Encrypted Storage**: Passwords are never stored in plain text (BCrypt).
