@@ -73,4 +73,22 @@ public class ProfileController {
             return profile(userDetails, model);
         }
     }
+
+    /**
+     * Handles the request to update a user's full name.
+     */
+    @PostMapping("/profile/update-fullname")
+    public String updateFullName(@AuthenticationPrincipal UserDetails userDetails,
+                                 @RequestParam String fullName,
+                                 Model model) {
+        try {
+            log.info("User '{}' updating full name to: {}", userDetails.getUsername(), fullName);
+            userService.updateFullName(userDetails.getUsername(), fullName);
+            return "redirect:/profile?fullNameUpdated";
+        } catch (Exception e) {
+            log.error("Full name update error for user '{}': {}", userDetails.getUsername(), e.getMessage());
+            model.addAttribute("error", e.getMessage());
+            return profile(userDetails, model);
+        }
+    }
 }

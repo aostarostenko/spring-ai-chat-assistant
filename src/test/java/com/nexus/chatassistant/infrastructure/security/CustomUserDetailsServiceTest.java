@@ -33,7 +33,7 @@ class CustomUserDetailsServiceTest {
     void shouldLoadUserByUsername() {
         // Given
         String username = "testuser";
-        User user = new User("123", username, "test@example.com", "encodedPass", Set.of("ROLE_USER"));
+        User user = new User("123", username, "Full Name", "test@example.com", "encodedPass", Set.of("ROLE_USER"));
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
 
         // When

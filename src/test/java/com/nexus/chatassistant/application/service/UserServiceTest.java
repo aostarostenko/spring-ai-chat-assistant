@@ -38,6 +38,7 @@ class UserServiceTest {
     void shouldRegisterUserSuccessfully() {
         // Given
         String username = "testuser";
+        String fullName = "Test User";
         String email = "test@example.com";
         String rawPassword = "password123";
         String encodedPassword = "encodedPassword123";
@@ -47,10 +48,11 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        User registeredUser = userService.registerUser(username, email, rawPassword);
+        User registeredUser = userService.registerUser(username, fullName, email, rawPassword);
 
         // Then
         assertThat(registeredUser.username()).isEqualTo(username);
+        assertThat(registeredUser.fullName()).isEqualTo(fullName);
         assertThat(registeredUser.email()).isEqualTo(email);
         assertThat(registeredUser.password()).isEqualTo(encodedPassword);
         assertThat(registeredUser.roles()).containsExactly("ROLE_USER");
@@ -65,7 +67,7 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenThrow(new org.springframework.dao.RecoverableDataAccessException("DB down"));
 
         // When / Then
-        assertThatThrownBy(() -> userService.registerUser(username, "email@test.com", "pass"))
+        assertThatThrownBy(() -> userService.registerUser(username, "Test User", "email@test.com", "pass"))
                 .isInstanceOf(com.nexus.chatassistant.domain.exception.DaoException.class)
                 .hasMessageContaining("DB Error");
     }
@@ -78,7 +80,7 @@ class UserServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(mock(User.class)));
 
         // When / Then
-        assertThatThrownBy(() -> userService.registerUser(username, "email@test.com", "pass"))
+        assertThatThrownBy(() -> userService.registerUser(username, "Test User", "email@test.com", "pass"))
                 .isInstanceOf(WebException.class)
                 .hasMessage("Duplicate check");
     }
@@ -104,7 +106,7 @@ class UserServiceTest {
         String oldPass = "oldPass";
         String newPass = "newPass";
         String encodedNewPass = "encodedNewPass";
-        User existingUser = new User("1", username, "test@test.com", "encodedOldPass", Set.of("ROLE_USER"));
+        User existingUser = new User("1", username, "Test User", "test@test.com", "encodedOldPass", Set.of("ROLE_USER"));
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(oldPass, "encodedOldPass")).thenReturn(true);
@@ -122,7 +124,7 @@ class UserServiceTest {
     void shouldThrowExceptionIfOldPasswordMismatch() {
         // Given
         String username = "testuser";
-        User existingUser = new User("1", username, "test@test.com", "encodedOldPass", Set.of("ROLE_USER"));
+        User existingUser = new User("1", username, "Test User", "test@test.com", "encodedOldPass", Set.of("ROLE_USER"));
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches("wrongPass", "encodedOldPass")).thenReturn(false);
 
@@ -151,7 +153,7 @@ class UserServiceTest {
         // Given
         String username = "testuser";
         String newEmail = "new@example.com";
-        User existingUser = new User("1", username, "old@example.com", "pass", Set.of("ROLE_USER"));
+        User existingUser = new User("1", username, "Test User", "old@example.com", "pass", Set.of("ROLE_USER"));
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
         when(userRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -170,8 +172,8 @@ class UserServiceTest {
         // Given
         String username = "testuser";
         String newEmail = "taken@example.com";
-        User existingUser = new User("1", username, "old@example.com", "pass", Set.of("ROLE_USER"));
-        User otherUser = new User("2", "other", newEmail, "pass", Set.of("ROLE_USER"));
+        User existingUser = new User("1", username, "Test User", "old@example.com", "pass", Set.of("ROLE_USER"));
+        User otherUser = new User("2", "other", "Other User", newEmail, "pass", Set.of("ROLE_USER"));
         
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
         when(userRepository.findByEmail(newEmail)).thenReturn(Optional.of(otherUser));
@@ -180,5 +182,23 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.updateEmail(username, newEmail))
                 .isInstanceOf(WebException.class)
                 .hasMessage("Duplicate check");
+    }
+
+    @Test
+    @DisplayName("Should update full name successfully")
+    void shouldUpdateFullNameSuccessfully() {
+        // Given
+        String username = "testuser";
+        String newFullName = "Updated Name";
+        User existingUser = new User("1", username, "Old Name", "test@example.com", "pass", Set.of("ROLE_USER"));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        User updatedUser = userService.updateFullName(username, newFullName);
+
+        // Then
+        assertThat(updatedUser.fullName()).isEqualTo(newFullName);
+        verify(userRepository).save(any(User.class));
     }
 }

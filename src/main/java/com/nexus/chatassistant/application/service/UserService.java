@@ -88,9 +88,30 @@ public class UserService {
     }
 
     /**
+     * Updates the full name for an existing user.
+     */
+    public User updateFullName(String username, String newFullName) {
+        log.info("Updating full name for user: {}", username);
+        User user;
+        try {
+            user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+        }
+
+        User updatedUser = user.withFullName(newFullName);
+        try {
+            return userRepository.save(updatedUser);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
+        }
+    }
+
+    /**
      * Registers a new user with BCrypt password encoding.
      */
-    public User registerUser(String username, String email, String password) {
+    public User registerUser(String username, String fullName, String email, String password) {
         log.info("Registering new user: {}", username);
         
         boolean exists;
@@ -104,7 +125,7 @@ public class UserService {
             throw new WebException("Duplicate check", ErrorCodes.DUPLICATE_USER);
         }
 
-        User user = new User(username, email, passwordEncoder.encode(password), Set.of("ROLE_USER"));
+        User user = new User(username, fullName, email, passwordEncoder.encode(password), Set.of("ROLE_USER"));
         try {
             return userRepository.save(user);
         } catch (DataAccessException e) {

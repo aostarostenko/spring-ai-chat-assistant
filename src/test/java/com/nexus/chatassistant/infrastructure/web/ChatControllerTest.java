@@ -52,7 +52,7 @@ class ChatControllerTest {
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn(username);
 
-        User user = new User(userId, username, "email", "pass", Set.of("ROLE_USER"));
+        User user = new User(userId, username, "Full Name", "email", "pass", Set.of("ROLE_USER"));
         ChatSession session = new ChatSession(sessionId, userId, "Title", null);
         
         when(userService.findByUsername(username)).thenReturn(Optional.of(user));
@@ -101,7 +101,7 @@ class ChatControllerTest {
         Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn(username);
         
-        User userA = new User("idA", username, "email", "pass", Set.of("ROLE_USER"));
+        User userA = new User("idA", username, "Full Name A", "email", "pass", Set.of("ROLE_USER"));
         ChatSession sessionB = new ChatSession(sessionId, "idB", "Title", null);
         
         when(userService.findByUsername(username)).thenReturn(Optional.of(userA));

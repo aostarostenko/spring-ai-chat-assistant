@@ -44,12 +44,13 @@ public class AuthController {
      */
     @PostMapping("/register")
     public String registerUser(@RequestParam String username,
+                               @RequestParam String fullName,
                                @RequestParam String email,
                                @RequestParam String password,
                                Model model) {
         log.info("Received registration request for username: {}", username);
         try {
-            userService.registerUser(username, email, password);
+            userService.registerUser(username, fullName, email, password);
             log.info("User {} successfully registered.", username);
             return "redirect:/login?registered";
         } catch (Exception e) {

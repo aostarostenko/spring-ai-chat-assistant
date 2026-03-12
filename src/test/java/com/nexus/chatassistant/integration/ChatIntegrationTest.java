@@ -125,7 +125,7 @@ class ChatIntegrationTest {
         when(userRepository.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> {
             User u = inv.getArgument(0);
             String id = u.id() == null ? java.util.UUID.randomUUID().toString() : u.id();
-            User saved = new User(id, u.username(), u.email(), u.password(), u.roles());
+            User saved = new User(id, u.username(), u.fullName(), u.email(), u.password(), u.roles());
             usersDb.put(id, saved);
             usersDb.put(u.username(), saved);
             return saved;
@@ -174,7 +174,7 @@ class ChatIntegrationTest {
     void shouldHandleFullChatFlow() throws Exception {
         // Given
         String rawPassword = "password123";
-        User user = new User("user1", "user1@test.com", passwordEncoder.encode(rawPassword), Set.of("ROLE_USER"));
+        User user = new User("user1", "Full Name 1", "user1@test.com", passwordEncoder.encode(rawPassword), Set.of("ROLE_USER"));
         User savedUser = userRepository.save(user);
         ChatSession session = new ChatSession(savedUser.id(), "Initial Summary");
         ChatSession savedSession = sessionRepository.save(session);
@@ -230,7 +230,7 @@ class ChatIntegrationTest {
     @DisplayName("Summarization Trigger: 5 messages trigger title update")
     void shouldTriggerSummarization() throws Exception {
         // Given
-        User user = userRepository.save(new User("user-sum", "sum@test.com", "pass", Set.of("ROLE_USER")));
+        User user = userRepository.save(new User("user-sum", "Sum User", "sum@test.com", "pass", Set.of("ROLE_USER")));
         ChatSession session = sessionRepository.save(new ChatSession(user.id(), "Old Title"));
         
         when(responseSpec.content()).thenReturn("A brief 6 word summary result");
@@ -268,8 +268,8 @@ class ChatIntegrationTest {
     void shouldEnforceSessionIsolation() throws Exception {
         // Given
         String passA = "passA";
-        User userA = userRepository.save(new User("userA", "a@test.com", passwordEncoder.encode(passA), Set.of("ROLE_USER")));
-        User userB = userRepository.save(new User("userB", "b@test.com", "passB", Set.of("ROLE_USER")));
+        User userA = userRepository.save(new User("userA", "User A", "a@test.com", passwordEncoder.encode(passA), Set.of("ROLE_USER")));
+        User userB = userRepository.save(new User("userB", "User B", "b@test.com", "passB", Set.of("ROLE_USER")));
         
         ChatSession sessionB = sessionRepository.save(new ChatSession(userB.id(), "User B Session"));
         

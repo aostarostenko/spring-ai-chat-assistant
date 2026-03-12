@@ -13,6 +13,7 @@ import java.util.Set;
 public record User(
         @Id String id,
         String username,
+        String fullName,
         String email,
         String password,
         Set<String> roles
@@ -20,21 +21,28 @@ public record User(
     /**
      * Standard constructor for creating a new user instance.
      */
-    public User(String username, String email, String password, Set<String> roles) {
-        this(null, username, email, password, roles);
+    public User(String username, String fullName, String email, String password, Set<String> roles) {
+        this(null, username, fullName, email, password, roles);
     }
 
     /**
-     * Creates a new User instance with a modified email[cite: 66].
+     * Creates a new User instance with a modified email.
      */
     public User withEmail(String newEmail) {
-        return new User(id, username, newEmail, password, roles);
+        return new User(id, username, fullName, newEmail, password, roles);
     }
 
     /**
      * Creates a new User instance with a modified (encoded) password.
      */
     public User withPassword(String newPassword) {
-        return new User(id, username, email, newPassword, roles);
+        return new User(id, username, fullName, email, newPassword, roles);
+    }
+
+    /**
+     * Creates a new User instance with a modified fullName.
+     */
+    public User withFullName(String newFullName) {
+        return new User(id, username, newFullName, email, password, roles);
     }
 }
