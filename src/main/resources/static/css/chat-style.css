@@ -113,9 +113,11 @@ body {
 .message.ai pre {
     background-color: #161b22;
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow-x: auto;
     border: 1px solid var(--border-color);
+    border-top: 4px solid #30363d; /* Using a slightly lighter grey for the "label" area */
+    margin: 10px 0;
 }
 
 .message.ai code {
@@ -123,13 +125,13 @@ body {
     padding: 2px 5px;
     border-radius: 4px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.9em;
+    font-size: 0.9rem;
 }
 
 .message.ai pre code {
     background-color: transparent;
     padding: 0;
-    font-size: 0.9em;
+    font-size: 0.9rem;
 }
 
 .message.ai ul, .message.ai ol {
