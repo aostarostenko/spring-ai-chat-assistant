@@ -14,10 +14,10 @@
         <a th:href="@{/chat/new}" class="new-chat-btn">+ New Chat</a>
     </div>
     <div class="session-list">
-        <a th:each="session : ${sessions}"
-           th:href="@{/chat/{id}(id=${session.id})}"
-           th:class="'session-item ' + (${session.id == activeSessionId} ? 'active' : '')"
-           th:text="${session.summary != null ? session.summary : 'New Chat'}">
+        <a th:each="chatSession : ${sessions}"
+           th:href="@{/chat/{id}(id=${chatSession.id})}"
+           th:class="'session-item ' + (${chatSession.id == activeSessionId} ? 'active' : '')"
+           th:text="${chatSession.summary != null ? chatSession.summary : 'New Chat'}">
         </a>
     </div>
     <div class="sidebar-footer">
@@ -60,7 +60,7 @@
         const headerName = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
         const token = /*[[${_csrf.token}]]*/ '';
 
-        const socket = new SockJS('/chat-websocket');
+        const socket = new SockJS([[ @{/chat-websocket} ]]);
         stompClient = Stomp.over(socket);
 
         // Pass the CSRF token in the connection headers

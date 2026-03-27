@@ -53,6 +53,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Specifically handle missing static resources to prevent log noise.
+     */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public void handleNoResourceFound(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        // We intentionally leave this empty to "swallow" the error,
+        // or you can log it as a simple DEBUG message.
+        log.debug("Resource not found: {}", ex.getResourcePath());
+    }
+
+    /**
      * Fallback for generic system crashes.
      */
     @ExceptionHandler(Exception.class)

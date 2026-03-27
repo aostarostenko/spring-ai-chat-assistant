@@ -62,4 +62,20 @@ public class ChatWebController {
 
         return "chat";
     }
+
+    /**
+     * Creates a new chat session and redirects to it.
+     */
+    @GetMapping("/chat/new")
+    public String newChat(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
+
+        // Create session with "New Chat" as placeholder summary
+        ChatSession newSession = new ChatSession(user.id(), null);
+        ChatSession saved = chatService.saveSession(newSession);
+
+        log.info("User {} created a new session: {}", user.username(), saved.id());
+        return "redirect:/chat/" + saved.id();
+    }
 }

@@ -20,7 +20,7 @@
 
 ### **1. Getting Started**
 
-1. **Access the App**: Navigate to `http://localhost:8080` in your browser.
+1. **Access the App**: Navigate to `http://localhost:8080/ai-chat-assistant/` in your browser.
 2. **Language Selection**: By default, the app loads in **Ukrainian**. To switch to **English**, click the "English" link in the footer or append `?lang=en` to the URL.
 3. **Registration**: Click "Sign Up" and provide a username, email, and password. If the email is already taken, a localized `WebException` message will guide you.
 
@@ -85,10 +85,21 @@ The application implements a centralized, multi-tier error strategy using **Doma
 ## 🛠️ Quick Start
 
 ```bash
-# 1. Set your Gemini API Key
-export GEMINI_API_KEY="your_key"
-
-# 2. Spin up the environment
+# 1. Spin up the environment
 docker-compose up --build
+
+# 2. Open the app in your browser
+open http://localhost:8080/ai-chat-assistant/
+
+```
+
+How to rebuild a Docker container:
+
+```bash
+# 1. Stop current containers: 
+    docker-compose down
+
+# 2. Restart with new key: 
+    docker-compose up -d
 
 ```

@@ -24,7 +24,7 @@ public class SecurityConfig {
                 // Ignore CSRF for WebSocket endpoint to allow STOMP handshakes
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/chat-websocket/**", "/login", "/register"))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/login", "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/register", "/login", "/css/**", "/js/**", "/favicon.ico").permitAll()
                         .requestMatchers("/chat-websocket/**").permitAll()
                         .anyRequest().authenticated()
                 )

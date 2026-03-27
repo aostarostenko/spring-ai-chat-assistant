@@ -1,3 +1,7 @@
+server:
+  servlet:
+    context-path: /ai-chat-assistant
+
 spring:
   application:
     name: spring-ai-chat-assistant
@@ -5,11 +9,18 @@ spring:
     virtual:
       enabled: true
   mongodb:
-      uri: mongodb://mongodb:27017/ai_assistant_db
+    uri: ${SPRING_MONGODB_URI} # Use the variable passed from docker-compose
+
+  # MOVE THIS OUT OF MONGODB
   ai:
     google:
       genai:
         api-key: ${GEMINI_API_KEY}
+        project-id: ${GOOGLE_PROJECT_ID}
+        chat:
+          options:
+            model: gemini-2.5-flash
+
   thymeleaf:
     cache: false
   messages:

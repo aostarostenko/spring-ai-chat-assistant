@@ -19,12 +19,13 @@ services:
     depends_on:
       - mongodb
     environment:
-      # Use the internal service name 'mongodb' for the connection URI [cite: 181]
+      # Use the internal service name 'mongodb' for the connection URI
       - SPRING_MONGODB_URI=mongodb://mongodb:27017/ai_assistant_db
-      # Enables Java 25 Virtual Threads for high-performance AI processing [cite: 181, 201]
+      # Enables Java 25 Virtual Threads for high-performance AI processing
       - SPRING_THREADS_VIRTUAL_ENABLED=true
-      # Securely injected from your local environment variables [cite: 181, 206]
+      # Securely injected from your local environment variables
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
     restart: always
 
 volumes:

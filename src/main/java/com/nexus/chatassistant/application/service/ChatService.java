@@ -109,4 +109,13 @@ public class ChatService {
             throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
         }
     }
+
+    public ChatSession saveSession(ChatSession session) {
+        try {
+            return sessionRepository.save(session);
+        } catch (DataAccessException e) {
+            log.error("Failed to save chat session: {}", e.getMessage());
+            throw new DaoException("Failed to create session", ErrorCodes.DB_WRITE_FAILURE, e);
+        }
+    }
 }
