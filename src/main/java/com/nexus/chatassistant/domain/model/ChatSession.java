@@ -28,7 +28,7 @@ public record ChatSession(
      * threshold to trigger an AI-generated summary update.
      */
     public boolean shouldSummarize(long messageCount) {
-        return messageCount > 0 && messageCount % 5 == 0;
+        return messageCount == 2;
     }
 
     /**

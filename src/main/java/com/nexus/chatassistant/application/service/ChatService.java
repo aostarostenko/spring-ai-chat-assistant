@@ -59,9 +59,9 @@ public class ChatService {
             throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
         }
 
-        // Logic: Summarize every 5 messages to keep the sidebar context relevant
-        if (count > 0 && count % 5 == 0) {
-            log.info("Summarization threshold (5) reached for session {}. Triggering AI...", sessionId);
+        // Logic: Summarize after the first AI response (2 messages total)
+        if (count == 2) {
+            log.info("Summarization threshold (2) reached for session {}. Triggering AI...", sessionId);
             summarizationService.summarizeAsync(sessionId);
         }
         return saved;
@@ -105,6 +105,14 @@ public class ChatService {
     public List<ChatMessage> getSessionMessages(String sessionId) {
         try {
             return messageRepository.findBySessionIdOrderByTimestampAsc(sessionId);
+        } catch (DataAccessException e) {
+            throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
+        }
+    }
+
+    public long getMessageCount(String sessionId) {
+        try {
+            return messageRepository.countBySessionId(sessionId);
         } catch (DataAccessException e) {
             throw new DaoException("DB Error", ErrorCodes.DB_READ_FAILURE, e);
         }

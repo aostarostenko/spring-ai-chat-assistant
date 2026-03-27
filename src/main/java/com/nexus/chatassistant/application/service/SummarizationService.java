@@ -3,12 +3,14 @@ package com.nexus.chatassistant.application.service;
 import com.nexus.chatassistant.domain.exception.DaoException;
 import com.nexus.chatassistant.domain.exception.ErrorCodes;
 import com.nexus.chatassistant.domain.model.ChatMessage;
+import com.nexus.chatassistant.domain.model.ChatSession;
 import com.nexus.chatassistant.domain.repository.ChatMessageRepository;
 import com.nexus.chatassistant.domain.repository.ChatSessionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.dao.DataAccessException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +27,16 @@ public class SummarizationService {
     private final ChatSessionRepository sessionRepository;
     private final ChatMessageRepository messageRepository;
     private final ChatClient chatClient;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public SummarizationService(ChatSessionRepository sessionRepository,
                                 ChatMessageRepository messageRepository,
-                                ChatClient.Builder chatClientBuilder) {
+                                ChatClient.Builder chatClientBuilder,
+                                SimpMessagingTemplate messagingTemplate) {
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
         this.chatClient = chatClientBuilder.build();
+        this.messagingTemplate = messagingTemplate;
     }
 
     /**
@@ -61,8 +66,13 @@ public class SummarizationService {
             try {
                 sessionRepository.findById(sessionId).ifPresent(session -> {
                     try {
-                        sessionRepository.save(session.withSummary(summary));
+                        ChatSession updatedSession = session.withSummary(summary);
+                        sessionRepository.save(updatedSession);
                         log.debug("Session {} metadata updated in MongoDB.", sessionId);
+
+                        // Task 2: Broadcast the updated session object via WebSocket
+                        messagingTemplate.convertAndSend("/topic/session-update/" + sessionId, updatedSession);
+                        log.info("Broadcasted session update for {}: {}", sessionId, summary);
                     } catch (DataAccessException e) {
                         throw new DaoException("DB Error", ErrorCodes.DB_WRITE_FAILURE, e);
                     }

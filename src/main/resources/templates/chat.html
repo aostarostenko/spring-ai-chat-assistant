@@ -5,6 +5,7 @@
     <link rel="stylesheet" th:href="@{/css/chat-style.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
@@ -16,6 +17,8 @@
     <div class="session-list">
         <a th:each="chatSession : ${sessions}"
            th:href="@{/chat/{id}(id=${chatSession.id})}"
+           th:id="'session-' + ${chatSession.id}"
+           th:attr="data-session-id=${chatSession.id}"
            th:class="'session-item ' + (${chatSession.id == activeSessionId} ? 'active' : '')"
            th:text="${chatSession.summary != null ? chatSession.summary : 'New Chat'}">
         </a>
@@ -54,8 +57,6 @@
 
     /* Inside your connect() function */
     function connect() {
-        if (!sessionId) return;
-
         // Fetch the CSRF token from the meta tags (provided by Spring Security)
         const headerName = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
         const token = /*[[${_csrf.token}]]*/ '';
@@ -69,8 +70,23 @@
 
         stompClient.connect(headers, function (frame) {
             console.log('Connected: ' + frame);
-            stompClient.subscribe('/topic/messages/' + sessionId, function (messageOutput) {
-                showMessage(JSON.parse(messageOutput.body));
+
+            if (sessionId) {
+                stompClient.subscribe('/topic/messages/' + sessionId, function (messageOutput) {
+                    showMessage(JSON.parse(messageOutput.body));
+                });
+            }
+
+            // Subscribe to updates for ALL sessions in the sidebar
+            document.querySelectorAll('[data-session-id]').forEach(sessionLink => {
+                const id = sessionLink.getAttribute('data-session-id');
+                stompClient.subscribe('/topic/session-update/' + id, function (sessionOutput) {
+                    const updatedSession = JSON.parse(sessionOutput.body);
+                    const link = document.querySelector('[data-session-id="' + updatedSession.id + '"]');
+                    if (link) {
+                        link.textContent = updatedSession.summary;
+                    }
+                });
             });
         });
     }
@@ -79,7 +95,7 @@
         const history = document.getElementById('chat-history');
         const msgDiv = document.createElement('div');
         msgDiv.className = 'message ' + message.sender;
-        msgDiv.textContent = message.content;
+        msgDiv.innerHTML = marked.parse(message.content);
         history.appendChild(msgDiv);
         history.scrollTop = history.scrollHeight;
     }
@@ -99,7 +115,10 @@
     });
 
     connect();
-    // Scroll to bottom on load
+    // Parse existing messages and scroll to bottom on load
+    document.querySelectorAll('.message').forEach(msg => {
+        msg.innerHTML = marked.parse(msg.textContent);
+    });
     const history = document.getElementById('chat-history');
     history.scrollTop = history.scrollHeight;
     /*]]>*/

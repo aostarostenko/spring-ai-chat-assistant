@@ -2,17 +2,18 @@
 
 ### *Enterprise AI Chat with Spring Boot 4.0.3 & Java 25*
 
-**AI Chat Assistant** is a high-performance, real-time AI conversation platform. Built with **Hexagonal (Ports & Adapters) Architecture**, it ensures business logic remains decoupled from infrastructure like MongoDB and Google Gemini 3 Flash.
+**AI Chat Assistant** is a high-performance, real-time AI conversation platform. Built with **Hexagonal (Ports & Adapters) Architecture**, it ensures business logic remains decoupled from infrastructure like MongoDB and Google Gemini 2.5/3.1 Flash.
 
 ---
 
 ## 🛠 Technology Stack
 
-* **Java 25 (LTS)**: High-throughput concurrency via **Virtual Threads**.
-* **Spring Boot 4.0.3 & Spring AI 1.1.2**: Modern AI integration.
-* **Google Gemini 3 Flash**: Ultra-low latency reasoning.
-* **MongoDB 8.0+**: Flexible document persistence.
-* **WebSockets (STOMP)**: Full-duplex real-time streaming.
+* [cite_start]**Java 25 (LTS)**: High-throughput concurrency via **Virtual Threads** (Project Loom). [cite: 483]
+* [cite_start]**Spring Boot 4.0.3 & Spring AI 1.1.2**: Enterprise AI integration and auto-configuration. [cite: 481, 484]
+* **Google Gemini 2.5 Flash**: Ultra-low latency reasoning (Tier 1 API support).
+* [cite_start]**MongoDB 8.0+**: Flexible document persistence for chat history. [cite: 485]
+* [cite_start]**WebSockets (STOMP)**: Full-duplex real-time streaming for messages and sidebar updates. [cite: 485]
+* **Marked.js**: Client-side Markdown parsing for formatted AI responses (bold, code blocks, lists).
 
 ---
 
@@ -20,86 +21,77 @@
 
 ### **1. Getting Started**
 
-1. **Access the App**: Navigate to `http://localhost:8080/ai-chat-assistant/` in your browser.
-2. **Language Selection**: By default, the app loads in **Ukrainian**. To switch to **English**, click the "English" link in the footer or append `?lang=en` to the URL.
-3. **Registration**: Click "Sign Up" and provide a username, email, and password. If the email is already taken, a localized `WebException` message will guide you.
+1.  **Access the App**: Navigate to `http://localhost:8080/ai-chat-assistant/` in your browser.
+2.  **Language Selection**: If enabled in configuration, you can switch between **Ukrainian** and **English** via the footer links.
+3.  **Registration**: Click "Sign Up" to create an account. [cite_start]If the email is taken, a localized `WebException` (`WEB_101`) will guide you. [cite: 489, 504]
 
 ### **2. Starting a Chat**
 
-1. **New Session**: Click the **"+ New Chat"** button in the sidebar.
-2. **Sending Messages**: Type your prompt into the message box at the bottom.
-3. **Real-Time Response**: Watch as Gemini 3 Flash streams the response back to you. You don't need to refresh the page; the WebSocket connection handles the updates.
-4. **Auto-Summarization**: After 5 messages, the system uses a **Virtual Thread** to generate a 6-word title for your session, which will automatically update in your sidebar history.
+1.  **New Session**: Click **"+ New Chat"** in the sidebar. This generates a unique session ID and redirects you to the context-aware chat interface.
+2.  **Real-Time Formatting**: AI responses are rendered in real-time. Code snippets, bold text, and lists are formatted via Markdown for maximum readability.
+3.  **Instant Auto-Summarization**: After the **first exchange** (1 user message + 1 AI response), the system triggers a background Virtual Thread to generate a 6-word title.
+4.  **Sidebar Sync**: Titles update dynamically in the sidebar via WebSockets without requiring a page refresh.
 
 ### **3. Managing Your Profile**
 
-1. **Account Settings**: Click on your profile icon to change your email or update your password.
-2. **Security Errors**: If you enter an incorrect old password, a `SecurityException` will trigger a secure redirect to the login page with a specialized warning.
+1.  **Account Settings**: Change your display name, email, or password.
+2.  [cite_start]**Security Errors**: Incorrect password attempts trigger a `SecurityException` (`SEC_005`), redirecting you with a secure warning. [cite: 497, 118]
 
-### **4. Error Feedback**
+---
 
-* If the AI service is busy, a toast notification or error banner will appear with the message mapped from `WEB_103`.
-* If the database is down, you will be redirected to the home screen with a `DAO_001` error message.
+## ⚙️ Configuration & Features
+
+### **Environment Variables**
+To run the AI features, the following variables must be provided to the Docker environment:
+* `GEMINI_API_KEY`: Your Google AI Studio API Key (Tier 1 recommended).
+* `GOOGLE_PROJECT_ID`: Your Google Cloud Project ID (e.g., `gen-lang-client-xxxx`).
+
+### **Feature Flags**
+In `application.yml`, you can toggle system features:
+* `app.features.multi-language-enabled`: Set to `false` to hide language switchers and lock the UI to the default locale.
 
 ---
 
 ## 🏗️ System Structure (Hexagonal)
 
-1. **Domain**: Core business logic (Records & Interfaces).
-2. **Application**: Service orchestration using Virtual Threads.
-3. **Infrastructure**: Technical implementations (DB, Web, Security, AI).
+1.  [cite_start]**Domain**: Core business logic, Entities (Records), and Repository Ports. [cite: 501]
+2.  [cite_start]**Application**: Service orchestration (Chat, User, Summarization) using Virtual Threads. [cite: 501]
+3.  [cite_start]**Infrastructure**: Adapters for MongoDB, Spring Security 6, WebSockets, and Gemini AI. [cite: 501]
 
----
-
-## 🏗️ Folder Structure
-
-```text
-src/main/java/com/nexus/chatassistant/
-├── application/         # Use Case Orchestration (The "Brain")
-│   └── service/         # ChatService, UserService, SummarizationService
-├── domain/              # Business Logic & Models (The "Core")
-│   ├── model/           # Records: User, ChatMessage, ChatSession
-│   ├── repository/      # Ports: Repository Interfaces
-│   └── exception/       # Custom Exception Hierarchy & ErrorCodes constants
-└── infrastructure/      # Adapters (The "Tools")
-    ├── persistence/     # MongoDB Implementations
-    ├── web/             # Controllers, GlobalExceptionHandler
-    ├── security/        # Spring Security 6 & BCrypt
-    └── config/          # Locale, WebSocket, and App Configurations
-
-```
 ---
 
 ## 🛡️ Error Handling Architecture
 
-The application implements a centralized, multi-tier error strategy using **Domain Exceptions** and **Localized Error Codes**.
+[cite_start]The application implements a centralized, multi-tier error strategy using **Domain Exceptions** and **Localized Error Codes**. [cite: 503]
 
-### **The Three-Tier Exception Model**
-
-1. **`WebException`**: Business validation (e.g., `WEB_101`: Duplicate User).
-2. **`SecurityException`**: Auth & Authorization (e.g., `SEC_003`: User Not Found).
-3. **`DaoException`**: Persistence failures (e.g., `DAO_001`: DB Connection Lost).
+1.  [cite_start]**`WebException`**: Business validation (e.g., `WEB_101`: Duplicate User). [cite: 504]
+2.  [cite_start]**`SecurityException`**: Auth & Authorization (e.g., `SEC_003`: User Not Found). [cite: 505]
+3.  [cite_start]**`DaoException`**: Persistence failures (e.g., `DAO_001`: DB Connection Lost). [cite: 505]
 
 ---
 
 ## 🛠️ Quick Start
 
 ```bash
-# 1. Spin up the environment
-docker-compose up --build
+# 1. Set your environment variables (PowerShell example)
+$env:GEMINI_API_KEY="your_key"
+$env:GOOGLE_PROJECT_ID="gen-lang-client-xxxxxxxx"
 
-# 2. Open the app in your browser
-open http://localhost:8080/ai-chat-assistant/
+# 2. Spin up the environment
+docker-compose up --build -d
 
+# 3. Access the app
+# URL: http://localhost:8080/ai-chat-assistant/
 ```
 
-How to rebuild a Docker container:
-
+### **Rebuilding Containers**
+If you modify `application.yml` or Java code, you must rebuild the image:
 ```bash
-# 1. Stop current containers: 
-    docker-compose down
+# Stop and remove containers
+docker-compose down
 
-# 2. Restart with new key: 
-    docker-compose up -d
-
+# Rebuild and start
+docker-compose up --build -d
 ```
+
+---

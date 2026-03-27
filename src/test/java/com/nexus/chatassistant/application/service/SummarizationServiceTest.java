@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,12 +43,15 @@ class SummarizationServiceTest {
     @Mock
     private ChatClient.CallResponseSpec responseSpec;
 
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
+
     private SummarizationService summarizationService;
 
     @BeforeEach
     void setUp() {
         when(chatClientBuilder.build()).thenReturn(chatClient);
-        summarizationService = new SummarizationService(sessionRepository, messageRepository, chatClientBuilder);
+        summarizationService = new SummarizationService(sessionRepository, messageRepository, chatClientBuilder, messagingTemplate);
     }
 
     @Test
@@ -78,6 +82,7 @@ class SummarizationServiceTest {
         verify(messageRepository).findBySessionIdOrderByTimestampAsc(sessionId);
         verify(chatClient.prompt()).user(argThat((String prompt) -> prompt.contains("Summarize the following conversation in exactly 6 words")));
         verify(sessionRepository).save(argThat(session -> session.summary().equals("Summarized: Help requested by user.")));
+        verify(messagingTemplate).convertAndSend(eq("/topic/session-update/" + sessionId), argThat((ChatSession session) -> session.summary().equals("Summarized: Help requested by user.")));
     }
 
     @Test

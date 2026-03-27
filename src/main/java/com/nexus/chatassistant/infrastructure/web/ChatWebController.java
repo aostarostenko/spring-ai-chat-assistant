@@ -1,6 +1,7 @@
 package com.nexus.chatassistant.infrastructure.web;
 
 import com.nexus.chatassistant.application.service.ChatService;
+import com.nexus.chatassistant.application.service.SummarizationService;
 import com.nexus.chatassistant.application.service.UserService;
 import com.nexus.chatassistant.domain.exception.ErrorCodes;
 import com.nexus.chatassistant.domain.exception.SecurityException;
@@ -25,10 +26,12 @@ public class ChatWebController {
     private static final Logger log = LoggerFactory.getLogger(ChatWebController.class);
     private final ChatService chatService;
     private final UserService userService;
+    private final SummarizationService summarizationService;
 
-    public ChatWebController(ChatService chatService, UserService userService) {
+    public ChatWebController(ChatService chatService, UserService userService, SummarizationService summarizationService) {
         this.chatService = chatService;
         this.userService = userService;
+        this.summarizationService = summarizationService;
     }
 
     /**
@@ -44,6 +47,18 @@ public class ChatWebController {
                 .orElseThrow(() -> new SecurityException("User check failed", ErrorCodes.USER_NOT_FOUND));
 
         List<ChatSession> sessions = chatService.getUserSessions(user.id());
+
+        // Retroactive summarization check
+        for (ChatSession s : sessions) {
+            if (s.summary() == null || s.summary().equals("New Chat")) {
+                long messageCount = chatService.getMessageCount(s.id());
+                if (messageCount > 0) {
+                    log.info("Retroactive summarization triggered for session: {}", s.id());
+                    summarizationService.summarizeAsync(s.id());
+                }
+            }
+        }
+
         model.addAttribute("sessions", sessions);
         model.addAttribute("user", user);
 

@@ -65,7 +65,7 @@
         </button>
     </form>
 
-    <footer style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.8em; text-align: center;">
+    <footer th:if="${isMultiLangEnabled}" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.8em; text-align: center;">
         <a th:href="@{/(lang='uk')}">Українська</a> | <a th:href="@{/(lang='en')}">English</a>
     </footer>
 </div>

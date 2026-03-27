@@ -109,6 +109,46 @@ body {
     border: 1px solid var(--border-color);
 }
 
+/* Markdown Styles */
+.message.ai pre {
+    background-color: #161b22;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+}
+
+.message.ai code {
+    background-color: #30363d;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.message.ai pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: 0.9em;
+}
+
+.message.ai ul, .message.ai ol {
+    margin: 10px 0;
+    padding-left: 25px;
+}
+
+.message.ai p {
+    margin: 10px 0;
+}
+
+.message.ai p:first-child {
+    margin-top: 0;
+}
+
+.message.ai p:last-child {
+    margin-bottom: 0;
+}
+
 .input-container {
     display: flex;
     gap: 10px;

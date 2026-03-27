@@ -33,7 +33,7 @@
     <p style="margin-top: 20px; font-size: 0.9em;">
         Don't have an account? <a th:href="@{/register}" style="color: var(--accent-color);">Sign up</a>
     </p>
-    <footer style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.8em; text-align: center;">
+    <footer th:if="${isMultiLangEnabled}" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.8em; text-align: center;">
         <a th:href="@{/(lang='uk')}">Українська</a> | <a th:href="@{/(lang='en')}">English</a>
     </footer>
 </div>

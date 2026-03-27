@@ -2,6 +2,10 @@ server:
   servlet:
     context-path: /ai-chat-assistant
 
+app:
+  features:
+    multi-language-enabled: false  # Toggle this to false to hide language switchers
+
 spring:
   application:
     name: spring-ai-chat-assistant
