@@ -17,8 +17,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -26,9 +28,9 @@ import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -46,7 +48,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+    "spring.autoconfigure.exclude=org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration,org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration",
+    "spring.ai.google.genai.api-key=test-key",
+    "spring.ai.google.genai.project-id=test-project"
+})
 class ChatIntegrationTest {
 
     @LocalServerPort
@@ -60,6 +66,15 @@ class ChatIntegrationTest {
 
     @MockitoBean
     private ChatMessageRepository messageRepository;
+
+    @MockitoBean
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
+
+    @MockitoBean
+    private com.mongodb.client.MongoClient mongoClient;
+
+    @MockitoBean
+    private org.springframework.ai.chat.memory.ChatMemory chatMemory;
 
     @Autowired
     private ChatService chatService;
@@ -139,12 +154,14 @@ class ChatIntegrationTest {
 
         when(chatClient.prompt()).thenReturn(requestSpec);
         when(requestSpec.user(anyString())).thenReturn(requestSpec);
+        when(requestSpec.advisors(org.mockito.ArgumentMatchers.any(org.springframework.ai.chat.client.advisor.api.Advisor[].class))).thenReturn(requestSpec);
+        when(requestSpec.advisors(org.mockito.ArgumentMatchers.any(java.util.function.Consumer.class))).thenReturn(requestSpec);
         when(requestSpec.call()).thenReturn(responseSpec);
 
         org.springframework.test.util.ReflectionTestUtils.setField(chatService, "chatClient", chatClient);
         org.springframework.test.util.ReflectionTestUtils.setField(summarizationService, "chatClient", chatClient);
 
-        wsUrl = "ws://localhost:" + port + "/chat-websocket";
+        wsUrl = "ws://localhost:" + port + "/ai-chat-assistant/chat-websocket";
         stompClient = new WebSocketStompClient(new SockJsClient(
                 List.of(new WebSocketTransport(new StandardWebSocketClient()))));
         
@@ -163,7 +180,7 @@ class ChatIntegrationTest {
         map.add("password", password);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:" + port + "/login", request, String.class);
+        ResponseEntity<String> response = restTemplate.postForEntity("http://localhost:" + port + "/ai-chat-assistant/login", request, String.class);
 
         List<String> cookies = response.getHeaders().get("Set-Cookie");
         return cookies != null ? cookies.get(0).split(";")[0] : null;

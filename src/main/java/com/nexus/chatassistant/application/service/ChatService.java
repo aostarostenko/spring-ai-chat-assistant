@@ -9,6 +9,8 @@ import com.nexus.chatassistant.domain.repository.ChatSessionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -25,13 +27,16 @@ public class ChatService {
     private final ChatMessageRepository messageRepository;
     private final ChatClient chatClient;
     private final SummarizationService summarizationService;
+    private final ChatMemory chatMemory;
 
     public ChatService(ChatSessionRepository sessionRepository,
                        ChatMessageRepository messageRepository,
                        ChatClient.Builder chatClientBuilder,
-                       SummarizationService summarizationService) {
+                       SummarizationService summarizationService,
+                       ChatMemory chatMemory) {
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
+        this.chatMemory = chatMemory;
         this.chatClient = chatClientBuilder.build();
         this.summarizationService = summarizationService;
         log.info("ChatService initialized with Gemini 3 capabilities.");
@@ -73,8 +78,12 @@ public class ChatService {
     public String chat(String sessionId, String userMessage) {
         log.info("Processing chat request for session: {}", sessionId);
 
-        // Fetch AI response
+        // Fetch AI response with conversation history
         String aiResponse = chatClient.prompt()
+                // 1. Add the Advisor to handle memory
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+                // 2. Tell the advisor WHICH session history to load
+                .advisors(a -> a.param("chat_memory_conversation_id", sessionId))
                 .user(userMessage)
                 .call()
                 .content();
