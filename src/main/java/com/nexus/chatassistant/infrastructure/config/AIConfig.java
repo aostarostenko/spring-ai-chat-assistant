@@ -3,13 +3,20 @@ package com.nexus.chatassistant.infrastructure.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.genai.types.FinishReason;
+import org.bson.Document;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.mongo.MongoChatMemoryRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.convert.ReadingConverter;
+import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
+
+import java.util.Arrays;
 
 @Configuration
 public class AIConfig {
@@ -76,6 +83,55 @@ public class AIConfig {
 
         mapper.registerModule(module);
         return mapper;
+    }
+
+    @Bean
+    public MongoCustomConversions mongoCustomConversions() {
+        return new MongoCustomConversions(Arrays.asList(
+                new FinishReasonWriteConverter(),
+                new StringToFinishReasonReadConverter(),
+                new DocumentToFinishReasonReadConverter()
+        ));
+    }
+
+    @WritingConverter
+    public static class FinishReasonWriteConverter implements Converter<FinishReason, String> {
+        @Override
+        public String convert(FinishReason source) {
+            // Saves the FinishReason safely as a simple string in MongoDB
+            return source.toString();
+        }
+    }
+
+    @ReadingConverter
+    public static class StringToFinishReasonReadConverter implements Converter<String, FinishReason> {
+        @Override
+        public FinishReason convert(String source) {
+            return resolveFinishReason(source);
+        }
+    }
+
+    @ReadingConverter
+    public static class DocumentToFinishReasonReadConverter implements Converter<Document, FinishReason> {
+        @Override
+        public FinishReason convert(Document source) {
+            // This handles any previously saved sessions that MongoDB stored as JSON objects
+            // before we implemented the Write converter.
+            String value = source.getString("name");
+            if (value == null) {
+                value = source.getString("value");
+            }
+            return value != null ? resolveFinishReason(value) : null;
+        }
+    }
+
+    private static FinishReason resolveFinishReason(String value) {
+        try {
+            // Uses reflection to grab the static field (e.g., STOP, MAX_TOKENS)
+            return (FinishReason) FinishReason.class.getField(value.toUpperCase()).get(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 }
