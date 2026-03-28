@@ -26,6 +26,8 @@ services:
       # Securely injected from your local environment variables
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
+    volumes:
+      - ./logs:/app/logs
     restart: always
 
 volumes:
