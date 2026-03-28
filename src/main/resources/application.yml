@@ -5,6 +5,8 @@ server:
 app:
   features:
     multi-language-enabled: false  # Toggle this to false to hide language switchers
+  volumes:
+    - ./logs:/app/logs  # Maps the container's logs to your computer
 
 spring:
   application:
@@ -31,7 +33,20 @@ spring:
     encoding: UTF-8
 
 logging:
+  # 1. NEW: Set the log file destination
+  file:
+    name: logs/spring-ai-chat-assistant.log
+
+  # 2. NEW: Configure auto-cleanup (Rolling Policy)
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB    # Starts a new file after 10MB
+      max-history: 7         # Deletes logs older than 7 days
+      total-size-cap: 100MB  # Absolute limit for the logs folder
+
+  # 3. Your existing levels
   level:
+    root: INFO
     com.nexus.chatassistant: DEBUG
     org.springframework.security: INFO
     org.springframework.ai: INFO

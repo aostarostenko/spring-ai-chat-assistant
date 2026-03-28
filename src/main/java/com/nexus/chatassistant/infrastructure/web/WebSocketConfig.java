@@ -8,9 +8,6 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-/**
- * Adapter configuring STOMP endpoints for real-time AI communication.
- */
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
@@ -28,4 +25,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         log.info("Registering WebSocket endpoint: /chat-websocket");
         registry.addEndpoint("/chat-websocket").withSockJS();
     }
+
 }

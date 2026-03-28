@@ -17,8 +17,9 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    display: flex;
+    display: flex; /* This aligns sidebar and chat horizontally */
     height: 100vh;
+    width: 100vw;
     overflow: hidden;
 }
 
@@ -26,28 +27,35 @@ body {
 
 .sidebar {
     width: 260px;
-    background-color: var(--sidebar-bg);
-    border-right: 1px solid var(--border-color);
+    min-width: 260px; /* Physical lock */
+    flex-shrink: 0; /* Prevent flex-box from squishing it */
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
 }
 
 .main-chat {
     flex: 1;
     display: flex;
     flex-direction: column;
+    height: 100vh; /* Lock to viewport height */
+    min-width: 0; /* Allows children to scroll instead of pushing the width */
+    overflow: hidden; /* Keeps the header and input fixed */
     position: relative;
     background-color: var(--bg-color);
 }
 
 /* --- Chat Header & Export Dropdown --- */
 .chat-header {
-    padding: 15px 25px;
-    border-bottom: 1px solid var(--border-color);
+    position: relative; /* Required for z-index to work */
+    z-index: 1000; /* Higher than chat-history */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--sidebar-bg);
+    padding: 10px 20px;
+    min-height: 60px; /* Ensures consistent height */
 }
 
 .chat-title {
@@ -80,13 +88,13 @@ body {
     display: none;
     position: absolute;
     right: 0;
+    top: 100%; /* Sits exactly at the bottom of the button */
     background-color: var(--sidebar-bg);
-    min-width: 200px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-    z-index: 1000;
-    border-radius: 6px;
+    min-width: 180px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.5);
+    z-index: 9999; /* Ensure it's above EVERYTHING */
     border: 1px solid var(--border-color);
-    margin-top: 5px;
+    border-radius: 6px;
 }
 
 .dropdown-content a {
@@ -95,11 +103,13 @@ body {
     text-decoration: none;
     display: block;
     font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .dropdown-content a:hover {
-    background-color: var(--bg-color);
-    color: var(--accent-color);
+    background-color: var(--accent-color) !important;
+    color: white !important;
 }
 
 .dropdown:hover .dropdown-content {
@@ -108,6 +118,12 @@ body {
 
 /* Enable smooth scrolling globally for the chat container */
 .chat-history {
+    flex: 1; /* Take up all available middle space */
+    overflow-y: auto; /* Enable vertical scrolling */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
     scroll-behavior: smooth;
     scrollbar-width: thin; /* Firefox */
     scrollbar-color: var(--border-color) transparent;
@@ -204,6 +220,30 @@ body {
     background-color: var(--ai-msg-bg);
     border: 1px solid var(--border-color);
     border-bottom-left-radius: 2px;
+    position: relative;
+}
+
+.copy-message-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, background 0.2s;
+}
+
+.message.ai:hover .copy-message-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.copy-message-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--accent-color);
 }
 
 /* --- Markdown & AI Content Styling --- */
@@ -231,8 +271,13 @@ body {
     margin: 10px 0;
 }
 
-.message.ai p:first-child { margin-top: 0; }
-.message.ai p:last-child { margin-bottom: 0; }
+.message.ai p:first-child {
+    margin-top: 0;
+}
+
+.message.ai p:last-child {
+    margin-bottom: 0;
+}
 
 /* Inline Code (e.g. `const x = 1`) */
 .message.ai :not(pre) > code {
@@ -332,7 +377,7 @@ button.send-btn:hover {
 .sidebar-footer {
     padding: 15px;
     border-top: 1px solid var(--border-color);
-    background-color: rgba(0,0,0,0.1);
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 .profile-link {
@@ -366,7 +411,7 @@ button.send-btn:hover {
     border: 1px solid var(--border-color);
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .card h2 {
@@ -406,7 +451,9 @@ button.send-btn:hover {
     text-align: center;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 .typing-dots {
     display: flex;
@@ -423,10 +470,45 @@ button.send-btn:hover {
     animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
-.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+.typing-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
 
 @keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1.0); }
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1.0);
+    }
+}
+
+.scroll-bottom-btn {
+    position: absolute;
+    bottom: 100px; /* Sits right above the input area */
+    right: 30px;
+    width: 40px;
+    height: 40px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    transition: opacity 0.3s, transform 0.2s;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.scroll-bottom-btn:hover {
+    transform: scale(1.1);
+    background-color: var(--user-msg-bg);
 }

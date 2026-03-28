@@ -51,7 +51,14 @@
         <div th:if="${messages != null}">
             <div th:each="msg : ${messages}"
                  th:class="'message ' + ${msg.sender}"
-                 th:text="${msg.content}">
+                 th:attr="data-raw-content=${msg.content}">
+                <button th:if="${msg.sender == 'ai'}" class="copy-message-btn" title="Copy message">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
+                </button>
+                <div class="message-content"></div>
             </div>
         </div>
 
@@ -69,6 +76,10 @@
             <p>Select a chat or start a new one to begin.</p>
         </div>
     </div>
+
+    <button id="scroll-bottom-btn" class="scroll-bottom-btn hidden" title="Back to latest">
+        ↓
+    </button>
 
     <div class="input-area" th:if="${activeSessionId != null}">
         <div class="input-container">
@@ -89,8 +100,8 @@
         const headerName = /*[[${_csrf.headerName}]]*/ 'X-CSRF-TOKEN';
         const token = /*[[${_csrf.token}]]*/ '';
 
-        const socket = new SockJS([[@{/chat-websocket} ]]);
-            stompClient = Stomp.over(socket);
+        const socket = new SockJS(/*[[@{/chat-websocket}]]*/ '/chat-websocket');
+        stompClient = Stomp.over(socket);
 
         // Pass the CSRF token in the connection headers
         const headers = {};
@@ -125,86 +136,139 @@
         });
     }
 
-        function showMessage(message) {
-            // Hide typing indicator when AI starts responding
-            document.getElementById('typing-indicator').classList.add('hidden');
+    function showMessage(message) {
+        // Hide typing indicator when AI starts responding
+        document.getElementById('typing-indicator').classList.add('hidden');
 
-            const history = document.getElementById('chat-history');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'message ' + message.sender;
-
-            // Parse Markdown and add to history
-            msgDiv.innerHTML = marked.parse(message.content);
-            history.appendChild(msgDiv);
-            Prism.highlightAll()
-            addCopyButtons();
-
-            // SMOOTH SCROLL LOGIC
-            history.scrollTo({
-                top: history.scrollHeight,
-                behavior: 'smooth' // This adds the sliding animation
-            });
-        }
-
-        function addCopyButtons() {
-            // Look for all 'pre' tags within any message that isn't from the user
-            document.querySelectorAll('.message:not(.user) pre').forEach(pre => {
-                if (pre.querySelector('.copy-btn')) return;
-
-                const button = document.createElement('button');
-                button.className = 'copy-btn';
-                button.textContent = 'Copy';
-
-                button.addEventListener('click', () => {
-                    // Get text, excluding the button's own text
-                    const codeElement = pre.querySelector('code');
-                    const textToCopy = codeElement ? codeElement.innerText : pre.innerText.replace('Copy', '');
-
-                    navigator.clipboard.writeText(textToCopy).then(() => {
-                        button.textContent = 'Copied!';
-                        button.style.background = '#28a745'; // Green feedback
-                        setTimeout(() => {
-                            button.textContent = 'Copy';
-                            button.style.background = '';
-                        }, 2000);
-                    });
-                });
-
-                pre.appendChild(button);
-            });
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('message-input');
-            const content = input.value.trim();
-            if (content && stompClient) {
-                // Show typing indicator
-                const indicator = document.getElementById('typing-indicator');
-                indicator.classList.remove('hidden');
-                const history = document.getElementById('chat-history');
-                history.appendChild(indicator); // Move to bottom
-                history.scrollTop = history.scrollHeight;
-
-                stompClient.send("/app/chat", {}, JSON.stringify({'sessionId': sessionId, 'content': content}));
-                input.value = '';
-            }
-        }
-
-        document.getElementById('send-btn')?.addEventListener('click', sendMessage);
-        document.getElementById('message-input')?.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-
-        connect();
-        // Parse existing messages and scroll to bottom on load
-        document.querySelectorAll('.message').forEach(msg => {
-            msg.innerHTML = marked.parse(msg.textContent);
-        });
-        Prism.highlightAll();
-        addCopyButtons();
         const history = document.getElementById('chat-history');
-        history.scrollTop = history.scrollHeight;
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message ' + message.sender;
 
+        if (message.sender === 'ai') {
+            msgDiv.innerHTML = `
+                    <button class="copy-message-btn" title="Copy message">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    </button>
+                    <div class="message-content">${marked.parse(message.content)}</div>
+                `;
+        } else {
+            msgDiv.innerHTML = `<div class="message-content">${marked.parse(message.content)}</div>`;
+        }
+
+        history.appendChild(msgDiv);
+        Prism.highlightAll()
+        addCopyButtons();
+
+        // SMOOTH SCROLL LOGIC
+        history.scrollTo({
+            top: history.scrollHeight,
+            behavior: 'smooth' // This adds the sliding animation
+        });
+    }
+
+    function addCopyButtons() {
+        // Look for all 'pre' tags within any message that isn't from the user
+        document.querySelectorAll('.message:not(.user) pre').forEach(pre => {
+            if (pre.querySelector('.copy-btn')) return;
+
+            const button = document.createElement('button');
+            button.className = 'copy-btn';
+            button.textContent = 'Copy';
+
+            button.addEventListener('click', () => {
+                // Get text, excluding the button's own text
+                const codeElement = pre.querySelector('code');
+                const textToCopy = codeElement ? codeElement.innerText : pre.innerText.replace('Copy', '');
+
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    button.textContent = 'Copied!';
+                    button.style.background = '#28a745'; // Green feedback
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                        button.style.background = '';
+                    }, 2000);
+                });
+            });
+
+            pre.appendChild(button);
+        });
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('message-input');
+        const content = input.value.trim();
+        if (content && stompClient) {
+            // Show typing indicator
+            const indicator = document.getElementById('typing-indicator');
+            indicator.classList.remove('hidden');
+            const history = document.getElementById('chat-history');
+            history.appendChild(indicator); // Move to bottom
+            history.scrollTop = history.scrollHeight;
+
+            stompClient.send("/app/chat", {}, JSON.stringify({'sessionId': sessionId, 'content': content}));
+            input.value = '';
+        }
+    }
+
+    document.getElementById('send-btn')?.addEventListener('click', sendMessage);
+    document.getElementById('message-input')?.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Global copy message button handler
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.copy-message-btn')) {
+            const btn = e.target.closest('.copy-message-btn');
+            const messageDiv = btn.closest('.message');
+            // Get text while ignoring the button itself
+            const textToCopy = messageDiv.querySelector('.message-content').innerText;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalSVG = btn.innerHTML;
+                btn.innerHTML = '<span style="font-size: 10px;">Copied!</span>';
+                setTimeout(() => btn.innerHTML = originalSVG, 2000);
+            });
+        }
+    });
+
+    connect();
+    // Parse existing messages using the raw data attribute
+    document.querySelectorAll('.message[data-raw-content]').forEach(msg => {
+        const raw = msg.getAttribute('data-raw-content');
+        const contentDiv = msg.querySelector('.message-content');
+        if (contentDiv) {
+            contentDiv.innerHTML = marked.parse(raw);
+        } else {
+            msg.innerHTML = marked.parse(raw);
+        }
+    });
+    Prism.highlightAll();
+    addCopyButtons();
+    const history = document.getElementById('chat-history');
+    history.scrollTop = history.scrollHeight;
+
+    // Scroll to Bottom Button Logic
+    const scrollBtn = document.getElementById('scroll-bottom-btn');
+
+    // 1. Show/Hide button based on scroll position
+    history.addEventListener('scroll', () => {
+        const threshold = 300; // Pixels from bottom
+        const isScrolledUp = history.scrollHeight - history.scrollTop - history.clientHeight > threshold;
+
+        if (isScrolledUp) {
+            scrollBtn.classList.remove('hidden');
+        } else {
+            scrollBtn.classList.add('hidden');
+        }
+    });
+
+    // 2. Click to jump to bottom
+    scrollBtn.addEventListener('click', () => {
+        history.scrollTo({
+            top: history.scrollHeight,
+            behavior: 'smooth'
+        });
+    });
     /*]]>*/
 </script>
 </body>
